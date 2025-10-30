@@ -21,8 +21,12 @@ function App() {
   // Face detection state
   const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(false);
   const [showLandmarks, setShowLandmarks] = useState(false);
-  const [selectedSticker, setSelectedSticker] = useState(null);
   const faceDetectorRef = useRef(null);
+
+  // Draggable stickers state
+  const [placedStickers, setPlacedStickers] = useState([]);
+  const [draggingSticker, setDraggingSticker] = useState(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
 
   // AI state
   const [geminiKey, setGeminiKey] = useState('');
@@ -52,36 +56,36 @@ function App() {
     { id: 'neon', name: 'Neon', icon: '💡' },
   ];
 
-  // AR Stickers Definition
+  // Stickers Definition (simplified - no landmarks needed)
   const stickers = [
     // Animals
-    { id: 'dog', name: 'Dog', icon: '🐶', category: 'animals', landmarks: ['nose', 'ears'] },
-    { id: 'cat', name: 'Cat', icon: '🐱', category: 'animals', landmarks: ['nose', 'ears'] },
-    { id: 'bunny', name: 'Bunny', icon: '🐰', category: 'animals', landmarks: ['ears'] },
-    { id: 'bear', name: 'Bear', icon: '🐻', category: 'animals', landmarks: ['ears'] },
-    { id: 'panda', name: 'Panda', icon: '🐼', category: 'animals', landmarks: ['eyes', 'ears'] },
+    { id: 'dog', name: 'Dog', icon: '🐶', category: 'animals' },
+    { id: 'cat', name: 'Cat', icon: '🐱', category: 'animals' },
+    { id: 'bunny', name: 'Bunny', icon: '🐰', category: 'animals' },
+    { id: 'bear', name: 'Bear', icon: '🐻', category: 'animals' },
+    { id: 'panda', name: 'Panda', icon: '🐼', category: 'animals' },
 
     // Accessories
-    { id: 'glasses', name: 'Glasses', icon: '🕶️', category: 'accessories', landmarks: ['eyes'] },
-    { id: 'crown', name: 'Crown', icon: '👑', category: 'accessories', landmarks: ['head'] },
-    { id: 'hat', name: 'Hat', icon: '🎩', category: 'accessories', landmarks: ['head'] },
-    { id: 'party-hat', name: 'Party Hat', icon: '🎉', category: 'accessories', landmarks: ['head'] },
+    { id: 'glasses', name: 'Glasses', icon: '🕶️', category: 'accessories' },
+    { id: 'crown', name: 'Crown', icon: '👑', category: 'accessories' },
+    { id: 'hat', name: 'Hat', icon: '🎩', category: 'accessories' },
+    { id: 'party-hat', name: 'Party Hat', icon: '🎉', category: 'accessories' },
 
     // Fun
-    { id: 'hearts', name: 'Hearts', icon: '💕', category: 'fun', landmarks: ['eyes'] },
-    { id: 'stars', name: 'Stars', icon: '⭐', category: 'fun', landmarks: ['around'] },
-    { id: 'sparkles', name: 'Sparkles', icon: '✨', category: 'fun', landmarks: ['around'] },
-    { id: 'flowers', name: 'Flowers', icon: '🌸', category: 'fun', landmarks: ['around'] },
+    { id: 'hearts', name: 'Hearts', icon: '💕', category: 'fun' },
+    { id: 'stars', name: 'Stars', icon: '⭐', category: 'fun' },
+    { id: 'sparkles', name: 'Sparkles', icon: '✨', category: 'fun' },
+    { id: 'flowers', name: 'Flowers', icon: '🌸', category: 'fun' },
 
     // Expressions
-    { id: 'laugh', name: 'LOL', icon: '😂', category: 'expressions', landmarks: ['face'] },
-    { id: 'cool', name: 'Cool', icon: '😎', category: 'expressions', landmarks: ['face'] },
-    { id: 'fire', name: 'Fire', icon: '🔥', category: 'expressions', landmarks: ['around'] },
+    { id: 'laugh', name: 'LOL', icon: '😂', category: 'expressions' },
+    { id: 'cool', name: 'Cool', icon: '😎', category: 'expressions' },
+    { id: 'fire', name: 'Fire', icon: '🔥', category: 'expressions' },
 
     // Seasonal
-    { id: 'santa', name: 'Santa', icon: '🎅', category: 'seasonal', landmarks: ['head'] },
-    { id: 'snowflake', name: 'Snowflake', icon: '❄️', category: 'seasonal', landmarks: ['around'] },
-    { id: 'pumpkin', name: 'Pumpkin', icon: '🎃', category: 'seasonal', landmarks: ['face'] },
+    { id: 'santa', name: 'Santa', icon: '🎅', category: 'seasonal' },
+    { id: 'snowflake', name: 'Snowflake', icon: '❄️', category: 'seasonal' },
+    { id: 'pumpkin', name: 'Pumpkin', icon: '🎃', category: 'seasonal' },
   ];
 
   // Load face-api.js models
@@ -134,11 +138,6 @@ function App() {
         .detectAllFaces(video, options)
         .withFaceLandmarks();
 
-      // Log detection results occasionally
-      if (Math.random() < 0.016) {
-        console.log('Face-api detection running. Faces found:', detections.length);
-      }
-
       return detections;
     } catch (err) {
       console.error('Error detecting faces:', err);
@@ -163,95 +162,64 @@ function App() {
     });
   };
 
-  // Draw AR stickers on detected faces using face-api landmarks
-  const drawStickers = (ctx, detections) => {
-    if (!selectedSticker || detections.length === 0) {
-      return;
-    }
+  // Add a new sticker to the canvas
+  const addSticker = (stickerTemplate) => {
+    const newSticker = {
+      id: `${stickerTemplate.id}-${Date.now()}`,
+      icon: stickerTemplate.icon,
+      name: stickerTemplate.name,
+      x: 50, // Percentage from left
+      y: 50, // Percentage from top
+      size: 60, // px
+      rotation: 0,
+    };
+    setPlacedStickers([...placedStickers, newSticker]);
+  };
 
-    console.log('✨ Drawing stickers:', selectedSticker.name, 'Faces:', detections.length, 'Canvas size:', ctx.canvas.width, 'x', ctx.canvas.height);
+  // Remove a sticker
+  const removeSticker = (stickerId) => {
+    setPlacedStickers(placedStickers.filter(s => s.id !== stickerId));
+  };
 
-    detections.forEach((detection) => {
-      const landmarks = detection.landmarks.positions;
+  // Handle sticker drag start
+  const handleStickerDragStart = (e, sticker) => {
+    e.preventDefault();
+    setDraggingSticker(sticker.id);
 
-      // Face-api.js 68 landmark indices:
-      // Jaw: 0-16, Right Eyebrow: 17-21, Left Eyebrow: 22-26
-      // Nose: 27-35, Right Eye: 36-41, Left Eye: 42-47
-      // Mouth: 48-67
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
-      // Get key landmark points
-      const nose = landmarks[30];        // Nose tip
-      const leftEye = landmarks[36];     // Left eye outer corner
-      const rightEye = landmarks[45];    // Right eye outer corner
-      const leftEyeCenter = landmarks[39]; // Left eye center
-      const rightEyeCenter = landmarks[42]; // Right eye center
-      const forehead = landmarks[27];    // Top of nose bridge
-      const leftEyebrow = landmarks[19]; // Left eyebrow center
-      const rightEyebrow = landmarks[24]; // Right eyebrow center
+    dragOffsetRef.current = {
+      x: clientX - rect.left - (sticker.x * rect.width / 100),
+      y: clientY - rect.top - (sticker.y * rect.height / 100),
+    };
+  };
 
-      // Calculate face dimensions
-      const eyeDistance = Math.sqrt(
-        Math.pow(rightEye.x - leftEye.x, 2) +
-        Math.pow(rightEye.y - leftEye.y, 2)
-      );
+  // Handle sticker drag move
+  const handleStickerDragMove = (e) => {
+    if (!draggingSticker) return;
 
-      const stickerSize = eyeDistance * 1.8; // Scale based on face size
+    const container = document.querySelector('.video-container');
+    if (!container) return;
 
-      // Setup font for emoji rendering
-      ctx.font = `${stickerSize}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+    const rect = container.getBoundingClientRect();
+    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
-      switch (selectedSticker.id) {
-        case 'dog':
-        case 'cat':
-        case 'bunny':
-        case 'bear':
-        case 'panda':
-          // Draw animal face on nose
-          ctx.fillText(selectedSticker.icon, nose.x, nose.y);
-          // Draw ears above eyebrows
-          const earOffset = eyeDistance * 0.5;
-          ctx.fillText('👂', leftEyebrow.x - earOffset, leftEyebrow.y - earOffset);
-          ctx.fillText('👂', rightEyebrow.x + earOffset, rightEyebrow.y - earOffset);
-          break;
+    const x = ((clientX - rect.left - dragOffsetRef.current.x) / rect.width) * 100;
+    const y = ((clientY - rect.top - dragOffsetRef.current.y) / rect.height) * 100;
 
-        case 'glasses':
-          // Draw glasses over eyes
-          const eyesCenterX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
-          const eyesCenterY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
-          ctx.fillText(selectedSticker.icon, eyesCenterX, eyesCenterY);
-          break;
+    setPlacedStickers(placedStickers.map(s =>
+      s.id === draggingSticker
+        ? { ...s, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+        : s
+    ));
+  };
 
-        case 'crown':
-        case 'hat':
-        case 'party-hat':
-        case 'santa':
-          // Draw on top of head
-          const headTop = forehead.y - eyeDistance * 0.8;
-          const headCenterX = (leftEye.x + rightEye.x) / 2;
-          ctx.fillText(selectedSticker.icon, headCenterX, headTop);
-          break;
-
-        case 'hearts':
-        case 'stars':
-        case 'sparkles':
-        case 'flowers':
-        case 'fire':
-        case 'snowflake':
-          // Draw around face
-          const offset = eyeDistance * 0.8;
-          ctx.fillText(selectedSticker.icon, nose.x - offset, nose.y - offset);
-          ctx.fillText(selectedSticker.icon, nose.x + offset, nose.y - offset);
-          ctx.fillText(selectedSticker.icon, nose.x - offset, nose.y + offset);
-          ctx.fillText(selectedSticker.icon, nose.x + offset, nose.y + offset);
-          break;
-
-        default:
-          // Default: draw on nose
-          ctx.fillText(selectedSticker.icon, nose.x, nose.y);
-      }
-    });
+  // Handle sticker drag end
+  const handleStickerDragEnd = () => {
+    setDraggingSticker(null);
   };
 
   const applyFilter = (ctx, filterType) => {
@@ -341,8 +309,42 @@ function App() {
     if (canvasRef.current) {
       setShowCaptureFlash(true);
 
-      // Create image from canvas
-      const imageData = canvasRef.current.toDataURL('image/png');
+      // Create a composite canvas with stickers
+      const originalCanvas = canvasRef.current;
+      const compositeCanvas = document.createElement('canvas');
+      compositeCanvas.width = originalCanvas.width;
+      compositeCanvas.height = originalCanvas.height;
+      const ctx = compositeCanvas.getContext('2d');
+
+      // Draw the original canvas (video + filters + landmarks)
+      ctx.drawImage(originalCanvas, 0, 0);
+
+      // Draw placed stickers on top
+      if (placedStickers.length > 0) {
+        // Apply mirror transformation to match live view
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.translate(-compositeCanvas.width, 0);
+
+        placedStickers.forEach((sticker) => {
+          const x = (sticker.x / 100) * compositeCanvas.width;
+          const y = (sticker.y / 100) * compositeCanvas.height;
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((sticker.rotation * Math.PI) / 180);
+          ctx.font = `${sticker.size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(sticker.icon, 0, 0);
+          ctx.restore();
+        });
+
+        ctx.restore();
+      }
+
+      // Create image from composite canvas
+      const imageData = compositeCanvas.toDataURL('image/png');
       setCapturedPhoto(imageData);
 
       // Remove flash after animation
@@ -417,64 +419,28 @@ function App() {
         // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Apply transformations and filter
+        // Apply transformations and filter - keep everything in one context
         ctx.save();
         ctx.scale(-1, 1);
         ctx.translate(-canvas.width, 0);
 
+        // Draw video with filter
         applyFilter(ctx, selectedFilter);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        ctx.restore();
+        // Reset filter for overlays but keep same transform context
+        ctx.filter = 'none';
 
-        // Draw stickers when face detection is enabled
+        // Draw face landmarks if enabled (for debugging)
         if (faceDetectionEnabled) {
           const detections = await detectFaces();
-
           if (detections && detections.length > 0) {
-            ctx.save();
-            ctx.filter = 'none';
-            ctx.scale(-1, 1);
-            ctx.translate(-canvas.width, 0);
-
             drawLandmarks(ctx, detections);
-            if (selectedSticker) {
-              console.log('Drawing stickers to canvas in live view');
-              drawStickers(ctx, detections);
-
-              // DEBUG: Draw a bright test rectangle to confirm drawing persists
-              ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-              ctx.fillRect(50, 50, 100, 100);
-
-              // DEBUG: Draw test text
-              ctx.fillStyle = 'white';
-              ctx.strokeStyle = 'black';
-              ctx.lineWidth = 3;
-              ctx.font = 'bold 30px Arial';
-              ctx.textAlign = 'left';
-              ctx.strokeText('TEST', 170, 100);
-              ctx.fillText('TEST', 170, 100);
-
-              console.log('🎨 Debug shapes drawn at:', Date.now());
-            }
-
-            ctx.restore();
-          } else if (selectedSticker) {
-            // Show message when no face detected but sticker selected
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.translate(-canvas.width, 0);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.lineWidth = 3;
-            ctx.font = 'bold 20px Arial';
-            ctx.textAlign = 'center';
-            const message = 'Position your face in the camera';
-            ctx.strokeText(message, canvas.width / 2, canvas.height / 2);
-            ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-            ctx.restore();
           }
         }
+
+        // Restore context once at the end
+        ctx.restore();
       }
 
       animationFrameRef.current = requestAnimationFrame(renderFrame);
@@ -484,7 +450,11 @@ function App() {
   // Load face-api models on mount
   useEffect(() => {
     loadFaceApiModels();
-    setGeminiKey('AIzaSyDPAe7vBOTIH8JirgONBY-jtRpRY92Nw_8');
+    // Load API key from environment variable
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY || '';
+    if (apiKey) {
+      setGeminiKey(apiKey);
+    }
   }, []);
 
   useEffect(() => {
@@ -498,7 +468,7 @@ function App() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, faceDetectionEnabled, selectedSticker, showLandmarks]);
+  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, faceDetectionEnabled, showLandmarks]);
 
   const startWebcam = async () => {
     try {
@@ -861,6 +831,47 @@ function App() {
                   ref={canvasRef}
                   className={`webcam-canvas ${!isWebcamActive ? 'hidden' : ''}`}
                 />
+
+                {/* Sticker Overlay Layer */}
+                {isWebcamActive && (
+                  <div
+                    className="sticker-overlay"
+                    onMouseMove={handleStickerDragMove}
+                    onMouseUp={handleStickerDragEnd}
+                    onTouchMove={handleStickerDragMove}
+                    onTouchEnd={handleStickerDragEnd}
+                  >
+                    {placedStickers.map((sticker) => (
+                      <div
+                        key={sticker.id}
+                        className="placed-sticker"
+                        style={{
+                          left: `${sticker.x}%`,
+                          top: `${sticker.y}%`,
+                          fontSize: `${sticker.size}px`,
+                          transform: `translate(-50%, -50%) rotate(${sticker.rotation}deg) scaleX(-1)`,
+                          cursor: draggingSticker === sticker.id ? 'grabbing' : 'grab',
+                        }}
+                      >
+                        <span
+                          className="sticker-emoji"
+                          onMouseDown={(e) => handleStickerDragStart(e, sticker)}
+                          onTouchStart={(e) => handleStickerDragStart(e, sticker)}
+                        >
+                          {sticker.icon}
+                        </span>
+                        <button
+                          className="sticker-delete"
+                          onClick={() => removeSticker(sticker.id)}
+                          title="Remove sticker"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {showCaptureFlash && <div className="capture-flash" />}
 
                 {isWebcamActive && (
@@ -934,10 +945,7 @@ function App() {
                       <input
                         type="checkbox"
                         checked={faceDetectionEnabled}
-                        onChange={(e) => {
-                          console.log('Face detection toggled:', e.target.checked);
-                          setFaceDetectionEnabled(e.target.checked);
-                        }}
+                        onChange={(e) => setFaceDetectionEnabled(e.target.checked)}
                         className="toggle-checkbox"
                       />
                       <span className="toggle-label">🤖 Face Detection {faceDetectionEnabled ? '(ENABLED)' : '(OFF)'}</span>
@@ -974,11 +982,11 @@ function App() {
                   </div>
                 </div>
 
-                {/* AR Stickers - Only visible when face detection is enabled */}
-                {faceDetectionEnabled && <div className="control-panel stickers-panel">
-                  <h3 className="panel-title">AR Stickers</h3>
+                {/* Draggable Stickers */}
+                <div className="control-panel stickers-panel">
+                  <h3 className="panel-title">Stickers</h3>
                   <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
-                    Click a sticker to apply it to your face
+                    Click to add stickers, then drag to position
                   </p>
 
                   {['animals', 'accessories', 'fun', 'expressions', 'seasonal'].map(category => (
@@ -988,12 +996,8 @@ function App() {
                         {stickers.filter(s => s.category === category).map((sticker) => (
                           <button
                             key={sticker.id}
-                            className={`sticker-button ${selectedSticker?.id === sticker.id ? 'active' : ''}`}
-                            onClick={() => {
-                              const newSticker = selectedSticker?.id === sticker.id ? null : sticker;
-                              console.log('Sticker clicked:', sticker.name, 'Selected:', newSticker);
-                              setSelectedSticker(newSticker);
-                            }}
+                            className="sticker-button"
+                            onClick={() => addSticker(sticker)}
                             title={sticker.name}
                           >
                             <span className="sticker-icon">{sticker.icon}</span>
@@ -1002,7 +1006,7 @@ function App() {
                       </div>
                     </div>
                   ))}
-                </div>}
+                </div>
               </div>
             )}
           </div>
