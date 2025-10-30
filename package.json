@@ -1,6 +1,23 @@
 {
   "name": "beautify-me",
   "version": "0.1.0",
+  "description": "A real-time webcam filter application built with React that transforms your appearance with stunning filters",
+  "author": "devgunnu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devgunnu/beautify-me"
+  },
+  "keywords": [
+    "react",
+    "webcam",
+    "filters",
+    "webrtc",
+    "canvas",
+    "photo-filters",
+    "real-time",
+    "javascript"
+  ],
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
