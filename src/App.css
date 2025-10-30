@@ -185,14 +185,21 @@ html {
   animation: fadeInUp 0.8s ease-out 0.6s both;
 }
 
-.feature-card {
+/* Base card styles - shared by all card types */
+.feature-card,
+.showcase-card,
+.enhanced-feature-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(168, 85, 247, 0.2);
   border-radius: 20px;
-  padding: 40px 30px;
   text-align: center;
   transition: all 0.3s ease;
+}
+
+/* Feature cards in hero section */
+.feature-card {
+  padding: 40px 30px;
 }
 
 .feature-card:hover {
@@ -306,14 +313,9 @@ html {
   margin-top: 60px;
 }
 
+/* Showcase cards */
 .showcase-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  border-radius: 20px;
   padding: 30px 20px;
-  text-align: center;
-  transition: all 0.3s ease;
   cursor: pointer;
 }
 
@@ -442,14 +444,9 @@ html {
   margin-top: 60px;
 }
 
+/* Enhanced feature cards */
 .enhanced-feature-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  border-radius: 20px;
   padding: 32px 24px;
-  text-align: center;
-  transition: all 0.3s ease;
 }
 
 .enhanced-feature-card:hover {
@@ -970,6 +967,7 @@ html {
   gap: 20px;
 }
 
+/* Common button styles */
 .start-button,
 .stop-button {
   display: flex;
@@ -986,6 +984,17 @@ html {
   letter-spacing: 0.5px;
 }
 
+.start-button:hover,
+.stop-button:hover {
+  transform: translateY(-2px);
+}
+
+.start-button:active,
+.stop-button:active {
+  transform: translateY(0);
+}
+
+/* Start button specific styles */
 .start-button {
   background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
   color: white;
@@ -995,16 +1004,12 @@ html {
 }
 
 .start-button:hover {
-  transform: translateY(-2px);
   box-shadow:
     0 15px 40px rgba(168, 85, 247, 0.5),
     0 0 30px rgba(168, 85, 247, 0.3);
 }
 
-.start-button:active {
-  transform: translateY(0);
-}
-
+/* Stop button specific styles */
 .stop-button {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
   color: white;
@@ -1014,14 +1019,9 @@ html {
 }
 
 .stop-button:hover {
-  transform: translateY(-2px);
   box-shadow:
     0 15px 40px rgba(239, 68, 68, 0.4),
     0 0 30px rgba(239, 68, 68, 0.3);
-}
-
-.stop-button:active {
-  transform: translateY(0);
 }
 
 .button-icon {
