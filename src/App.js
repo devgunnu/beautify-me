@@ -20,7 +20,6 @@ function App() {
 
   // Face detection state
   const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(false);
-  const [showLandmarks, setShowLandmarks] = useState(false);
   const faceDetectorRef = useRef(null);
 
   // Draggable stickers state
@@ -1245,9 +1244,12 @@ function App() {
                   </div>
                 </div>
 
-                {/* AI Features */}
+                {/* Face Analysis Panel */}
                 <div className="control-panel">
-                  <h3 className="panel-title">AI Features</h3>
+                  <h3 className="panel-title">🤖 Face Analysis</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
+                    AI-powered face detection and recognition
+                  </p>
 
                   <div className="control-group">
                     <label className="control-label">
@@ -1257,31 +1259,100 @@ function App() {
                         onChange={(e) => setFaceDetectionEnabled(e.target.checked)}
                         className="toggle-checkbox"
                       />
-                      <span className="toggle-label">🤖 Face Detection {faceDetectionEnabled ? '(ENABLED)' : '(OFF)'}</span>
+                      <span className="toggle-label">Enable Face Detection {faceDetectionEnabled ? '✓' : ''}</span>
                     </label>
                   </div>
 
                   {faceDetectionEnabled && (
-                    <div className="control-group">
-                      <label className="control-label">
-                        <input
-                          type="checkbox"
-                          checked={showLandmarks}
-                          onChange={(e) => setShowLandmarks(e.target.checked)}
-                          className="toggle-checkbox"
-                        />
-                        <span className="toggle-label">👁️ Show Landmarks</span>
-                      </label>
-                    </div>
-                  )}
+                    <>
+                      <div className="control-group">
+                        <label className="control-label">
+                          <input
+                            type="checkbox"
+                            checked={showBoundingBox}
+                            onChange={(e) => setShowBoundingBox(e.target.checked)}
+                            className="toggle-checkbox"
+                          />
+                          <span className="toggle-label">📦 Bounding Box & Confidence</span>
+                        </label>
+                      </div>
 
+                      <div className="control-group">
+                        <label className="control-label">
+                          <input
+                            type="checkbox"
+                            checked={showExpressions}
+                            onChange={(e) => setShowExpressions(e.target.checked)}
+                            className="toggle-checkbox"
+                          />
+                          <span className="toggle-label">😊 Expression Recognition</span>
+                        </label>
+                      </div>
+
+                      <div className="control-group">
+                        <label className="control-label">
+                          <span className="slider-label">👁️ Landmarks:</span>
+                          <select
+                            value={landmarkColorMode}
+                            onChange={(e) => setLandmarkColorMode(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px',
+                              marginTop: '8px',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(168, 85, 247, 0.3)',
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              color: 'white',
+                            }}
+                          >
+                            <option value="none">Hide Landmarks</option>
+                            <option value="all">Show All (Green)</option>
+                            <option value="groups">Color Groups (Educational)</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="control-group" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                        <label style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', marginBottom: '10px', display: 'block' }}>
+                          🎯 Face Recognition
+                        </label>
+                        {!referenceDescriptor ? (
+                          <button
+                            className="ai-button"
+                            onClick={captureReferenceFace}
+                            style={{ width: '100%' }}
+                          >
+                            📸 Capture Reference Face
+                          </button>
+                        ) : (
+                          <div>
+                            <p style={{ color: '#00FF00', fontSize: '0.9rem', marginBottom: '10px' }}>
+                              ✓ Reference captured! Matching enabled.
+                            </p>
+                            <button
+                              className="ai-button"
+                              onClick={clearReferenceFace}
+                              style={{ width: '100%', background: 'rgba(255, 0, 0, 0.2)' }}
+                            >
+                              ✕ Clear Reference
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* AI Recommendations */}
+                <div className="control-panel">
+                  <h3 className="panel-title">✨ AI Recommendations</h3>
                   <div className="control-group">
                     <button
                       className="ai-button"
                       onClick={getAIRecommendation}
                       disabled={isAiProcessing}
                     >
-                      {isAiProcessing ? '🤔 Thinking...' : '✨ Get AI Recommendation'}
+                      {isAiProcessing ? '🤔 Thinking...' : 'Get Filter Suggestion'}
                     </button>
                     {aiRecommendation && (
                       <div className="ai-recommendation">
