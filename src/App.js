@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import './App.css';
+import * as faceapi from '@vladmandic/face-api';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 function App() {
   const videoRef = useRef(null);
@@ -15,6 +17,17 @@ function App() {
   const [showCaptureFlash, setShowCaptureFlash] = useState(false);
   const [filterIntensity, setFilterIntensity] = useState(100);
   const [beautyMode, setBeautyMode] = useState(false);
+
+  // Face detection state
+  const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(false);
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [selectedSticker, setSelectedSticker] = useState(null);
+  const faceDetectorRef = useRef(null);
+
+  // AI state
+  const [geminiKey, setGeminiKey] = useState('');
+  const [aiRecommendation, setAiRecommendation] = useState('');
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   const filters = [
     { id: 'none', name: 'Original', icon: '✨' },
@@ -38,6 +51,208 @@ function App() {
     { id: 'pastel', name: 'Pastel', icon: '🎨' },
     { id: 'neon', name: 'Neon', icon: '💡' },
   ];
+
+  // AR Stickers Definition
+  const stickers = [
+    // Animals
+    { id: 'dog', name: 'Dog', icon: '🐶', category: 'animals', landmarks: ['nose', 'ears'] },
+    { id: 'cat', name: 'Cat', icon: '🐱', category: 'animals', landmarks: ['nose', 'ears'] },
+    { id: 'bunny', name: 'Bunny', icon: '🐰', category: 'animals', landmarks: ['ears'] },
+    { id: 'bear', name: 'Bear', icon: '🐻', category: 'animals', landmarks: ['ears'] },
+    { id: 'panda', name: 'Panda', icon: '🐼', category: 'animals', landmarks: ['eyes', 'ears'] },
+
+    // Accessories
+    { id: 'glasses', name: 'Glasses', icon: '🕶️', category: 'accessories', landmarks: ['eyes'] },
+    { id: 'crown', name: 'Crown', icon: '👑', category: 'accessories', landmarks: ['head'] },
+    { id: 'hat', name: 'Hat', icon: '🎩', category: 'accessories', landmarks: ['head'] },
+    { id: 'party-hat', name: 'Party Hat', icon: '🎉', category: 'accessories', landmarks: ['head'] },
+
+    // Fun
+    { id: 'hearts', name: 'Hearts', icon: '💕', category: 'fun', landmarks: ['eyes'] },
+    { id: 'stars', name: 'Stars', icon: '⭐', category: 'fun', landmarks: ['around'] },
+    { id: 'sparkles', name: 'Sparkles', icon: '✨', category: 'fun', landmarks: ['around'] },
+    { id: 'flowers', name: 'Flowers', icon: '🌸', category: 'fun', landmarks: ['around'] },
+
+    // Expressions
+    { id: 'laugh', name: 'LOL', icon: '😂', category: 'expressions', landmarks: ['face'] },
+    { id: 'cool', name: 'Cool', icon: '😎', category: 'expressions', landmarks: ['face'] },
+    { id: 'fire', name: 'Fire', icon: '🔥', category: 'expressions', landmarks: ['around'] },
+
+    // Seasonal
+    { id: 'santa', name: 'Santa', icon: '🎅', category: 'seasonal', landmarks: ['head'] },
+    { id: 'snowflake', name: 'Snowflake', icon: '❄️', category: 'seasonal', landmarks: ['around'] },
+    { id: 'pumpkin', name: 'Pumpkin', icon: '🎃', category: 'seasonal', landmarks: ['face'] },
+  ];
+
+  // Load face-api.js models
+  const loadFaceApiModels = async () => {
+    try {
+      console.log('Loading face-api.js models...');
+      const MODEL_URL = '/models';
+
+      // Load Tiny Face Detector and Face Landmark models
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+
+      console.log('Face-api.js models loaded successfully!');
+      faceDetectorRef.current = true; // Mark as loaded
+      return true;
+    } catch (err) {
+      console.error('Error loading face-api models:', err);
+      setError('Failed to load face detection models: ' + err.message);
+      return false;
+    }
+  };
+
+  // Detect faces in the video using face-api.js
+  const detectFaces = async () => {
+    if (!faceDetectorRef.current) {
+      return [];
+    }
+
+    if (!videoRef.current) {
+      return [];
+    }
+
+    if (!faceDetectionEnabled) {
+      return [];
+    }
+
+    try {
+      const video = videoRef.current;
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+        return [];
+      }
+
+      // Detect faces with landmarks using face-api.js
+      const options = new faceapi.TinyFaceDetectorOptions({
+        inputSize: 416,
+        scoreThreshold: 0.5
+      });
+
+      const detections = await faceapi
+        .detectAllFaces(video, options)
+        .withFaceLandmarks();
+
+      // Log detection results occasionally
+      if (Math.random() < 0.016) {
+        console.log('Face-api detection running. Faces found:', detections.length);
+      }
+
+      return detections;
+    } catch (err) {
+      console.error('Error detecting faces:', err);
+      return [];
+    }
+  };
+
+  // Draw facial landmarks (for debugging)
+  const drawLandmarks = (ctx, detections) => {
+    if (!showLandmarks || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      const landmarks = detection.landmarks.positions;
+
+      // Draw all 68 landmarks
+      landmarks.forEach((point) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+        ctx.fillStyle = '#00FF00';
+        ctx.fill();
+      });
+    });
+  };
+
+  // Draw AR stickers on detected faces using face-api landmarks
+  const drawStickers = (ctx, detections) => {
+    if (!selectedSticker || detections.length === 0) {
+      return;
+    }
+
+    console.log('✨ Drawing stickers:', selectedSticker.name, 'Faces:', detections.length, 'Canvas size:', ctx.canvas.width, 'x', ctx.canvas.height);
+
+    detections.forEach((detection) => {
+      const landmarks = detection.landmarks.positions;
+
+      // Face-api.js 68 landmark indices:
+      // Jaw: 0-16, Right Eyebrow: 17-21, Left Eyebrow: 22-26
+      // Nose: 27-35, Right Eye: 36-41, Left Eye: 42-47
+      // Mouth: 48-67
+
+      // Get key landmark points
+      const nose = landmarks[30];        // Nose tip
+      const leftEye = landmarks[36];     // Left eye outer corner
+      const rightEye = landmarks[45];    // Right eye outer corner
+      const leftEyeCenter = landmarks[39]; // Left eye center
+      const rightEyeCenter = landmarks[42]; // Right eye center
+      const forehead = landmarks[27];    // Top of nose bridge
+      const leftEyebrow = landmarks[19]; // Left eyebrow center
+      const rightEyebrow = landmarks[24]; // Right eyebrow center
+
+      // Calculate face dimensions
+      const eyeDistance = Math.sqrt(
+        Math.pow(rightEye.x - leftEye.x, 2) +
+        Math.pow(rightEye.y - leftEye.y, 2)
+      );
+
+      const stickerSize = eyeDistance * 1.8; // Scale based on face size
+
+      // Setup font for emoji rendering
+      ctx.font = `${stickerSize}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      switch (selectedSticker.id) {
+        case 'dog':
+        case 'cat':
+        case 'bunny':
+        case 'bear':
+        case 'panda':
+          // Draw animal face on nose
+          ctx.fillText(selectedSticker.icon, nose.x, nose.y);
+          // Draw ears above eyebrows
+          const earOffset = eyeDistance * 0.5;
+          ctx.fillText('👂', leftEyebrow.x - earOffset, leftEyebrow.y - earOffset);
+          ctx.fillText('👂', rightEyebrow.x + earOffset, rightEyebrow.y - earOffset);
+          break;
+
+        case 'glasses':
+          // Draw glasses over eyes
+          const eyesCenterX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
+          const eyesCenterY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
+          ctx.fillText(selectedSticker.icon, eyesCenterX, eyesCenterY);
+          break;
+
+        case 'crown':
+        case 'hat':
+        case 'party-hat':
+        case 'santa':
+          // Draw on top of head
+          const headTop = forehead.y - eyeDistance * 0.8;
+          const headCenterX = (leftEye.x + rightEye.x) / 2;
+          ctx.fillText(selectedSticker.icon, headCenterX, headTop);
+          break;
+
+        case 'hearts':
+        case 'stars':
+        case 'sparkles':
+        case 'flowers':
+        case 'fire':
+        case 'snowflake':
+          // Draw around face
+          const offset = eyeDistance * 0.8;
+          ctx.fillText(selectedSticker.icon, nose.x - offset, nose.y - offset);
+          ctx.fillText(selectedSticker.icon, nose.x + offset, nose.y - offset);
+          ctx.fillText(selectedSticker.icon, nose.x - offset, nose.y + offset);
+          ctx.fillText(selectedSticker.icon, nose.x + offset, nose.y + offset);
+          break;
+
+        default:
+          // Default: draw on nose
+          ctx.fillText(selectedSticker.icon, nose.x, nose.y);
+      }
+    });
+  };
 
   const applyFilter = (ctx, filterType) => {
     const intensity = filterIntensity / 100;
@@ -148,7 +363,45 @@ function App() {
     setCapturedPhoto(null);
   };
 
-  const renderFrame = () => {
+  // Gemini AI Functions
+  const getAIRecommendation = async () => {
+    if (!geminiKey) {
+      setError('Please enter your Gemini API key to use AI features');
+      return;
+    }
+
+    setIsAiProcessing(true);
+    setAiRecommendation('');
+    setError(null);
+
+    try {
+      const genAI = new GoogleGenerativeAI(geminiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+      const currentTime = new Date().getHours();
+      const timeOfDay = currentTime < 12 ? 'morning' : currentTime < 18 ? 'afternoon' : 'evening';
+
+      const prompt = `You are a photography and filter expert. Suggest ONE of the best filters from this list for a webcam photo during the ${timeOfDay}:
+
+      Available filters: ${filters.map(f => f.name).join(', ')}.
+
+      Respond with ONLY the filter name and one brief sentence explaining why it's good for this time of day. Keep it under 30 words.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      setAiRecommendation(text);
+      setIsAiProcessing(false);
+    } catch (err) {
+      console.error('Error getting AI recommendation:', err);
+      setError(`Failed to get AI recommendation: ${err.message || 'Check your API key'}`);
+      setAiRecommendation('');
+      setIsAiProcessing(false);
+    }
+  };
+
+  const renderFrame = async () => {
     if (videoRef.current && canvasRef.current && isWebcamActive) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -173,11 +426,66 @@ function App() {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         ctx.restore();
+
+        // Draw stickers when face detection is enabled
+        if (faceDetectionEnabled) {
+          const detections = await detectFaces();
+
+          if (detections && detections.length > 0) {
+            ctx.save();
+            ctx.filter = 'none';
+            ctx.scale(-1, 1);
+            ctx.translate(-canvas.width, 0);
+
+            drawLandmarks(ctx, detections);
+            if (selectedSticker) {
+              console.log('Drawing stickers to canvas in live view');
+              drawStickers(ctx, detections);
+
+              // DEBUG: Draw a bright test rectangle to confirm drawing persists
+              ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+              ctx.fillRect(50, 50, 100, 100);
+
+              // DEBUG: Draw test text
+              ctx.fillStyle = 'white';
+              ctx.strokeStyle = 'black';
+              ctx.lineWidth = 3;
+              ctx.font = 'bold 30px Arial';
+              ctx.textAlign = 'left';
+              ctx.strokeText('TEST', 170, 100);
+              ctx.fillText('TEST', 170, 100);
+
+              console.log('🎨 Debug shapes drawn at:', Date.now());
+            }
+
+            ctx.restore();
+          } else if (selectedSticker) {
+            // Show message when no face detected but sticker selected
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.translate(-canvas.width, 0);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            const message = 'Position your face in the camera';
+            ctx.strokeText(message, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+          }
+        }
       }
 
       animationFrameRef.current = requestAnimationFrame(renderFrame);
     }
   };
+
+  // Load face-api models on mount
+  useEffect(() => {
+    loadFaceApiModels();
+    setGeminiKey('AIzaSyDPAe7vBOTIH8JirgONBY-jtRpRY92Nw_8');
+  }, []);
 
   useEffect(() => {
     if (isWebcamActive) {
@@ -190,7 +498,7 @@ function App() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity]);
+  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, faceDetectionEnabled, selectedSticker, showLandmarks]);
 
   const startWebcam = async () => {
     try {
@@ -528,44 +836,68 @@ function App() {
             <p className="section-subtitle">Start your webcam and experience the magic</p>
           </div>
 
-          <div className="video-wrapper">
-            <div className="video-container">
-              {!isWebcamActive && (
-                <div className="placeholder">
-                  <div className="placeholder-content">
-                    <svg className="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <div className="app-layout">
+            {/* Left Side - Camera */}
+            <div className="camera-section">
+              <div className="video-container">
+                {!isWebcamActive && (
+                  <div className="placeholder">
+                    <div className="placeholder-content">
+                      <svg className="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <p>Click the button below to start your webcam</p>
+                    </div>
+                  </div>
+                )}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="webcam hidden"
+                />
+                <canvas
+                  ref={canvasRef}
+                  className={`webcam-canvas ${!isWebcamActive ? 'hidden' : ''}`}
+                />
+                {showCaptureFlash && <div className="capture-flash" />}
+
+                {isWebcamActive && (
+                  <button className="capture-button" onClick={capturePhoto} title="Capture Photo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p>Click the button below to start your webcam</p>
+                  </button>
+                )}
+              </div>
+
+              {/* Filters below camera */}
+              {isWebcamActive && (
+                <div className="filters-container">
+                  <div className="filters-scroll">
+                    {filters.map((filter) => (
+                      <button
+                        key={filter.id}
+                        className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
+                        onClick={() => setSelectedFilter(filter.id)}
+                      >
+                        <span className="filter-icon">{filter.icon}</span>
+                        <span className="filter-name">{filter.name}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="webcam hidden"
-              />
-              <canvas
-                ref={canvasRef}
-                className={`webcam-canvas ${!isWebcamActive ? 'hidden' : ''}`}
-              />
-              {showCaptureFlash && <div className="capture-flash" />}
-
-              {isWebcamActive && (
-                <button className="capture-button" onClick={capturePhoto} title="Capture Photo">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-              )}
             </div>
 
+            {/* Right Side - Controls */}
             {isWebcamActive && (
-              <>
-                <div className="advanced-controls">
+              <div className="controls-sidebar">
+                {/* Basic Controls */}
+                <div className="control-panel">
+                  <h3 className="panel-title">Basic Controls</h3>
                   <div className="control-group">
                     <label className="control-label">
                       <input
@@ -593,21 +925,85 @@ function App() {
                   </div>
                 </div>
 
-                <div className="filters-container">
-                  <div className="filters-scroll">
-                    {filters.map((filter) => (
-                      <button
-                        key={filter.id}
-                        className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
-                        onClick={() => setSelectedFilter(filter.id)}
-                      >
-                        <span className="filter-icon">{filter.icon}</span>
-                        <span className="filter-name">{filter.name}</span>
-                      </button>
-                    ))}
+                {/* AI Features */}
+                <div className="control-panel">
+                  <h3 className="panel-title">AI Features</h3>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <input
+                        type="checkbox"
+                        checked={faceDetectionEnabled}
+                        onChange={(e) => {
+                          console.log('Face detection toggled:', e.target.checked);
+                          setFaceDetectionEnabled(e.target.checked);
+                        }}
+                        className="toggle-checkbox"
+                      />
+                      <span className="toggle-label">🤖 Face Detection {faceDetectionEnabled ? '(ENABLED)' : '(OFF)'}</span>
+                    </label>
+                  </div>
+
+                  {faceDetectionEnabled && (
+                    <div className="control-group">
+                      <label className="control-label">
+                        <input
+                          type="checkbox"
+                          checked={showLandmarks}
+                          onChange={(e) => setShowLandmarks(e.target.checked)}
+                          className="toggle-checkbox"
+                        />
+                        <span className="toggle-label">👁️ Show Landmarks</span>
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="control-group">
+                    <button
+                      className="ai-button"
+                      onClick={getAIRecommendation}
+                      disabled={isAiProcessing}
+                    >
+                      {isAiProcessing ? '🤔 Thinking...' : '✨ Get AI Recommendation'}
+                    </button>
+                    {aiRecommendation && (
+                      <div className="ai-recommendation">
+                        <p><strong>AI:</strong> {aiRecommendation}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </>
+
+                {/* AR Stickers - Only visible when face detection is enabled */}
+                {faceDetectionEnabled && <div className="control-panel stickers-panel">
+                  <h3 className="panel-title">AR Stickers</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
+                    Click a sticker to apply it to your face
+                  </p>
+
+                  {['animals', 'accessories', 'fun', 'expressions', 'seasonal'].map(category => (
+                    <div key={category} className="sticker-category">
+                      <h4 className="category-title">{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                      <div className="stickers-grid">
+                        {stickers.filter(s => s.category === category).map((sticker) => (
+                          <button
+                            key={sticker.id}
+                            className={`sticker-button ${selectedSticker?.id === sticker.id ? 'active' : ''}`}
+                            onClick={() => {
+                              const newSticker = selectedSticker?.id === sticker.id ? null : sticker;
+                              console.log('Sticker clicked:', sticker.name, 'Selected:', newSticker);
+                              setSelectedSticker(newSticker);
+                            }}
+                            title={sticker.name}
+                          >
+                            <span className="sticker-icon">{sticker.icon}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>}
+              </div>
             )}
           </div>
 

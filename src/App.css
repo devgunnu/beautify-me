@@ -536,6 +536,7 @@ html {
   text-align: center;
   width: 100%;
   max-width: 1200px;
+  margin: 0 auto;
 }
 
 .section-header {
@@ -568,6 +569,8 @@ html {
 .video-container {
   position: relative;
   width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
   border-radius: 24px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.05);
@@ -637,7 +640,10 @@ html {
   height: auto;
   display: block;
   background: transparent;
-  object-fit: cover;
+  max-height: 500px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
 }
 
 .webcam-canvas.hidden {
@@ -1261,5 +1267,243 @@ html {
   .footer-content {
     grid-template-columns: 1fr;
     gap: 30px;
+  }
+}
+
+/* App Layout - Side by Side */
+.app-layout {
+  display: flex;
+  gap: 25px;
+  align-items: start;
+  max-width: 1100px;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.camera-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex-shrink: 0;
+  max-width: 700px;
+}
+
+.controls-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 800px;
+  overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.5) rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  width: 320px;
+}
+
+.controls-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.controls-sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.controls-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.5);
+  border-radius: 10px;
+}
+
+.controls-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.7);
+}
+
+.control-panel {
+  padding: 25px;
+  background: rgba(30, 27, 75, 0.5);
+  border-radius: 15px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.panel-title {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(168, 85, 247, 0.3);
+}
+
+.ai-button {
+  padding: 15px 30px;
+  background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+}
+
+.ai-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+}
+
+.ai-button:active {
+  transform: translateY(0);
+}
+
+.ai-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ai-recommendation {
+  margin-top: 15px;
+  padding: 20px;
+  background: rgba(168, 85, 247, 0.15);
+  border-radius: 12px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  animation: fadeIn 0.3s ease;
+}
+
+.ai-recommendation strong {
+  color: #a855f7;
+}
+
+/* Stickers Section */
+.stickers-panel {
+  max-height: none;
+}
+
+.sticker-category {
+  margin-bottom: 20px;
+}
+
+.sticker-category:last-child {
+  margin-bottom: 0;
+}
+
+.category-title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-left: 8px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.stickers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 8px;
+}
+
+.sticker-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  aspect-ratio: 1;
+}
+
+.sticker-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.sticker-button.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
+  border-color: #a855f7;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+.sticker-icon {
+  font-size: 2rem;
+  transition: transform 0.3s ease;
+}
+
+.sticker-button:hover .sticker-icon {
+  transform: scale(1.1);
+}
+
+.sticker-button.active .sticker-icon {
+  transform: scale(1.15);
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Responsive Styles for App Layout */
+@media (max-width: 1024px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .controls-sidebar {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  .stickers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .control-panel {
+    padding: 20px;
+  }
+
+  .panel-title {
+    font-size: 1.1rem;
+  }
+
+  .ai-button {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+
+  .stickers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  }
+
+  .sticker-icon {
+    font-size: 1.8rem;
+  }
+
+  .category-title {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .control-panel {
+    padding: 15px;
+  }
+
+  .stickers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 6px;
+  }
+
+  .sticker-button {
+    padding: 8px;
+  }
+
+  .sticker-icon {
+    font-size: 1.5rem;
   }
 }
