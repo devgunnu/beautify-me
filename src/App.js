@@ -33,6 +33,11 @@ function App() {
   const [aiRecommendation, setAiRecommendation] = useState('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
 
+  // Face detection data state (separate from rendering)
+  /** Stores the most recent face detection results */
+  const [faceDetections, setFaceDetections] = useState([]);
+  const faceDetectionIntervalRef = useRef(null);
+
   const filters = [
     { id: 'none', name: 'Original', icon: '✨' },
     { id: 'grayscale', name: 'Grayscale', icon: '⚫' },
@@ -403,7 +408,47 @@ function App() {
     }
   };
 
-  const renderFrame = async () => {
+  /**
+   * Face Detection Loop (Separate from Video Rendering)
+   *
+   * This runs independently at 10fps to prevent slowing down the main video rendering.
+   * Educational Note: Separating ML inference from rendering prevents frame drops.
+   * The video renders at 60fps while face detection runs at 10fps.
+   */
+  const faceDetectionLoop = async () => {
+    if (!videoRef.current || !faceDetectionEnabled || !isWebcamActive) {
+      // Schedule next detection check
+      faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 100);
+      return;
+    }
+
+    const video = videoRef.current;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      try {
+        // Detect faces with landmarks
+        const detections = await detectFaces();
+
+        // Update state with new detections
+        // This will trigger re-render of landmarks on next frame
+        setFaceDetections(detections || []);
+      } catch (err) {
+        console.error('Face detection error:', err);
+      }
+    }
+
+    // Schedule next detection (10fps = 100ms interval)
+    faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 100);
+  };
+
+  /**
+   * Video Rendering Loop (60fps)
+   *
+   * Runs at maximum speed for smooth video display.
+   * No longer performs async face detection - just draws from stored state.
+   * Educational Note: This demonstrates the importance of separating heavy
+   * computational tasks from rendering for optimal performance.
+   */
+  const renderFrame = () => {
     if (videoRef.current && canvasRef.current && isWebcamActive) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -431,12 +476,10 @@ function App() {
         // Reset filter for overlays but keep same transform context
         ctx.filter = 'none';
 
-        // Draw face landmarks if enabled (for debugging)
-        if (faceDetectionEnabled) {
-          const detections = await detectFaces();
-          if (detections && detections.length > 0) {
-            drawLandmarks(ctx, detections);
-          }
+        // Draw face landmarks from stored state (non-blocking)
+        // Face detection runs in separate loop at 10fps
+        if (faceDetectionEnabled && faceDetections.length > 0) {
+          drawLandmarks(ctx, faceDetections);
         }
 
         // Restore context once at the end
@@ -457,6 +500,7 @@ function App() {
     }
   }, []);
 
+  // Effect to control video rendering loop
   useEffect(() => {
     if (isWebcamActive) {
       renderFrame();
@@ -468,7 +512,26 @@ function App() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, faceDetectionEnabled, showLandmarks]);
+  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, showLandmarks]);
+
+  // Effect to control face detection loop (separate from rendering)
+  useEffect(() => {
+    if (isWebcamActive && faceDetectionEnabled) {
+      // Start face detection loop
+      faceDetectionLoop();
+    }
+
+    return () => {
+      // Cleanup: stop face detection loop
+      if (faceDetectionIntervalRef.current) {
+        clearTimeout(faceDetectionIntervalRef.current);
+        faceDetectionIntervalRef.current = null;
+      }
+      // Clear detections when disabled
+      setFaceDetections([]);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWebcamActive, faceDetectionEnabled]);
 
   const startWebcam = async () => {
     try {
