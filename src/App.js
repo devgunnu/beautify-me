@@ -1,21 +1,72 @@
+/**
+ * Beautify Me - Main Application Component
+ * 
+ * This is the main React component that contains all the webcam filter functionality.
+ * It demonstrates several key React and Web API concepts:
+ * - React Hooks (useState, useRef, useEffect)
+ * - WebRTC API for camera access
+ * - Canvas API for video manipulation
+ * - Real-time rendering with requestAnimationFrame
+ * 
+ * Educational Notes for Beginners:
+ * - Components are the building blocks of React applications
+ * - This uses a functional component with hooks (modern React)
+ * - State (useState) manages data that changes over time
+ * - Refs (useRef) hold references to DOM elements and persist across renders
+ * - Effects (useEffect) handle side effects like starting/stopping animations
+ */
+
 import React, { useRef, useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  // ===== REACT REFS =====
+  // Refs allow us to directly access DOM elements and store mutable values
+  // that persist between renders without causing re-renders
+  
+  /** Reference to the HTML video element that displays the webcam stream */
   const videoRef = useRef(null);
+  
+  /** Reference to the HTML canvas element where we draw filtered video */
   const canvasRef = useRef(null);
-  const [isWebcamActive, setIsWebcamActive] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedFilter, setSelectedFilter] = useState('none');
+  
+  /** Reference to store the MediaStream object from getUserMedia */
   const streamRef = useRef(null);
+  
+  /** Reference to the app section for smooth scrolling */
   const appSectionRef = useRef(null);
+  
+  /** Reference to the animation frame ID for rendering loop */
   const animationFrameRef = useRef(null);
 
+  // ===== REACT STATE =====
+  // State variables that trigger re-renders when changed
+  // Syntax: const [value, setValue] = useState(initialValue)
+  
+  /** Tracks whether the webcam is currently active */
+  const [isWebcamActive, setIsWebcamActive] = useState(false);
+  
+  /** Stores error messages to display to the user */
+  const [error, setError] = useState(null);
+  
+  /** Currently selected filter ID (e.g., 'grayscale', 'sepia') */
+  const [selectedFilter, setSelectedFilter] = useState('none');
+  
+  /** Data URL of the captured photo (base64 encoded image) */
   const [capturedPhoto, setCapturedPhoto] = useState(null);
+  
+  /** Controls the camera flash animation when capturing photos */
   const [showCaptureFlash, setShowCaptureFlash] = useState(false);
+  
+  /** Filter intensity value from 0-100 (percentage) */
   const [filterIntensity, setFilterIntensity] = useState(100);
+  
+  /** Toggles beauty mode (skin smoothing) on/off */
   const [beautyMode, setBeautyMode] = useState(false);
 
+  // ===== FILTER DEFINITIONS =====
+  // Array of all available filters with their metadata
+  // Each filter has: id (unique identifier), name (display name), icon (emoji)
   const filters = [
     { id: 'none', name: 'Original', icon: '✨' },
     { id: 'grayscale', name: 'Grayscale', icon: '⚫' },
@@ -39,173 +90,308 @@ function App() {
     { id: 'neon', name: 'Neon', icon: '💡' },
   ];
 
+  /**
+   * Applies CSS filters to the canvas context
+   * 
+   * This function builds a CSS filter string based on the selected filter type
+   * and applies it to the canvas 2D context. Filters are applied before drawing
+   * each video frame.
+   * 
+   * @param {CanvasRenderingContext2D} ctx - The 2D rendering context
+   * @param {string} filterType - The ID of the filter to apply
+   * 
+   * Learn more about CSS filters:
+   * https://developer.mozilla.org/en-US/docs/Web/CSS/filter
+   */
   const applyFilter = (ctx, filterType) => {
+    // Convert intensity from 0-100 to 0-1 for calculations
     const intensity = filterIntensity / 100;
     let filterString = '';
 
-    // Build base filter based on type
+    // Build filter string based on selected type
+    // Each case uses CSS filter functions with calculated values
     switch (filterType) {
       case 'grayscale':
+        // Converts image to grayscale (black and white)
         filterString = `grayscale(${100 * intensity}%)`;
         break;
       case 'sepia':
+        // Gives the image a warm, brownish tone (vintage photography effect)
         filterString = `sepia(${100 * intensity}%)`;
         break;
       case 'invert':
+        // Inverts all colors (like a photo negative)
         filterString = `invert(${100 * intensity}%)`;
         break;
       case 'brightness':
+        // Increases brightness. 1 = normal, >1 = brighter
         const brightVal = 1 + (0.3 * intensity);
         filterString = `brightness(${brightVal})`;
         break;
       case 'contrast':
+        // Increases contrast between light and dark areas
         const contrastVal = 1 + (0.5 * intensity);
         filterString = `contrast(${contrastVal})`;
         break;
       case 'saturate':
+        // Boosts color saturation (makes colors more vibrant)
         const saturateVal = 1 + (1 * intensity);
         filterString = `saturate(${saturateVal})`;
         break;
       case 'blur':
+        // Applies gaussian blur effect
         const blurVal = 3 * intensity;
         filterString = `blur(${blurVal}px)`;
         break;
       case 'vintage':
+        // Combines multiple filters for a vintage camera look
         filterString = `sepia(${50 * intensity}%) contrast(${1 + 0.2 * intensity}) brightness(${1 - 0.1 * intensity})`;
         break;
       case 'cool':
+        // Shifts colors towards blue/cyan tones
         filterString = `hue-rotate(${180 * intensity}deg) saturate(${1 + 0.3 * intensity})`;
         break;
       case 'warm':
+        // Adds warm orange/yellow tones
         filterString = `sepia(${30 * intensity}%) saturate(${1 + 0.4 * intensity}) brightness(${1 + 0.1 * intensity})`;
         break;
       case 'dramatic':
+        // High contrast, dark shadows, intense colors
         filterString = `contrast(${1 + 0.5 * intensity}) brightness(${1 - 0.1 * intensity}) saturate(${1 + 0.3 * intensity})`;
         break;
       case 'moonlight':
+        // Cool, desaturated look with blue tones
         filterString = `brightness(${1 - 0.2 * intensity}) contrast(${1 + 0.2 * intensity}) saturate(${1 - 0.3 * intensity}) hue-rotate(${200 * intensity}deg)`;
         break;
       case 'sunset':
+        // Warm, golden-hour photography look
         filterString = `sepia(${40 * intensity}%) saturate(${1 + 0.5 * intensity}) brightness(${1 + 0.1 * intensity}) hue-rotate(${-10 * intensity}deg)`;
         break;
       case 'ocean':
+        // Aqua/teal color shift
         filterString = `hue-rotate(${180 * intensity}deg) saturate(${1 + 0.4 * intensity}) brightness(${1 + 0.1 * intensity})`;
         break;
       case 'rose':
+        // Pink/magenta color tones
         filterString = `hue-rotate(${320 * intensity}deg) saturate(${1 + 0.3 * intensity}) brightness(${1 + 0.05 * intensity})`;
         break;
       case 'noir':
+        // Film noir style: high contrast black and white
         filterString = `grayscale(${100 * intensity}%) contrast(${1 + 0.8 * intensity}) brightness(${1 - 0.1 * intensity})`;
         break;
       case 'cyberpunk':
+        // Neon purple/pink cyberpunk aesthetic
         filterString = `hue-rotate(${270 * intensity}deg) saturate(${1 + 1 * intensity}) contrast(${1 + 0.3 * intensity})`;
         break;
       case 'pastel':
+        // Soft, muted pastel colors
         filterString = `saturate(${1 - 0.4 * intensity}) brightness(${1 + 0.2 * intensity}) contrast(${1 - 0.1 * intensity})`;
         break;
       case 'neon':
+        // Ultra-saturated, bright neon colors
         filterString = `saturate(${1 + 1.5 * intensity}) contrast(${1 + 0.4 * intensity}) brightness(${1 + 0.2 * intensity})`;
         break;
       default:
+        // No filter applied
         filterString = 'none';
     }
 
-    // Apply beauty mode if enabled
+    // Apply beauty mode if enabled (adds subtle blur and brightness for smoother skin)
     if (beautyMode) {
       if (filterString === 'none') {
         filterString = 'blur(0.5px) brightness(1.05)';
       } else {
+        // Append beauty mode to existing filter
         filterString += ' blur(0.5px) brightness(1.05)';
       }
     }
 
+    // Set the filter on the canvas context
+    // This affects all subsequent drawing operations
     ctx.filter = filterString;
   };
 
+  /**
+   * Captures the current filtered video frame as a photo
+   * 
+   * Process:
+   * 1. Shows a flash animation
+   * 2. Converts the canvas content to a data URL (base64 PNG image)
+   * 3. Stores the image data in state
+   * 4. Hides the flash after 200ms
+   * 
+   * Learn more about toDataURL:
+   * https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toDataURL
+   */
   const capturePhoto = () => {
     if (canvasRef.current) {
+      // Show the white flash effect
       setShowCaptureFlash(true);
 
-      // Create image from canvas
+      // Convert canvas to base64-encoded PNG image
+      // toDataURL returns: "data:image/png;base64,iVBORw0KG..."
       const imageData = canvasRef.current.toDataURL('image/png');
       setCapturedPhoto(imageData);
 
-      // Remove flash after animation
+      // Remove flash animation after 200ms
       setTimeout(() => setShowCaptureFlash(false), 200);
     }
   };
 
+  /**
+   * Downloads the captured photo to the user's computer
+   * 
+   * Creates a temporary <a> element with a download attribute,
+   * sets the href to the image data URL, and programmatically clicks it.
+   */
   const downloadPhoto = () => {
     if (capturedPhoto) {
+      // Create a temporary link element
       const link = document.createElement('a');
+      
+      // Set filename with timestamp for uniqueness
       link.download = `beautify-me-${Date.now()}.png`;
+      
+      // Set the image data as the link target
       link.href = capturedPhoto;
+      
+      // Trigger the download
       link.click();
     }
   };
 
+  /**
+   * Closes the photo preview modal
+   */
   const closeCapturedPhoto = () => {
     setCapturedPhoto(null);
   };
 
+  /**
+   * Main rendering loop that draws video frames to canvas with filters
+   * 
+   * This function is called repeatedly using requestAnimationFrame for smooth
+   * 60 FPS rendering. It's the heart of the real-time filter application.
+   * 
+   * Process for each frame:
+   * 1. Check if video has enough data
+   * 2. Resize canvas to match video dimensions
+   * 3. Clear previous frame
+   * 4. Apply transformations (mirror effect)
+   * 5. Apply selected filter
+   * 6. Draw video frame to canvas
+   * 7. Schedule next frame
+   * 
+   * Learn more about requestAnimationFrame:
+   * https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
+   */
   const renderFrame = () => {
+    // Only render if we have valid refs and webcam is active
     if (videoRef.current && canvasRef.current && isWebcamActive) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
+      // HAVE_ENOUGH_DATA means video has loaded enough to start playing
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Set canvas dimensions to match video only if they've changed
+        // Resize canvas to match video dimensions (only when needed)
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
         }
 
-        // Clear the canvas
+        // Clear the previous frame
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Apply transformations and filter
+        // Save the current canvas state before transformations
         ctx.save();
+        
+        // Mirror the video horizontally for a more natural "selfie" view
+        // scale(-1, 1) flips horizontally, then we translate to reposition
         ctx.scale(-1, 1);
         ctx.translate(-canvas.width, 0);
 
+        // Apply the selected filter to the canvas context
         applyFilter(ctx, selectedFilter);
+        
+        // Draw the current video frame onto the canvas
+        // The filter is automatically applied because we set ctx.filter
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+        // Restore the canvas to its previous state (removes transformations)
         ctx.restore();
       }
 
+      // Schedule the next frame to be rendered
+      // This creates a smooth 60 FPS animation loop
       animationFrameRef.current = requestAnimationFrame(renderFrame);
     }
   };
 
+  /**
+   * useEffect hook for managing the rendering loop
+   * 
+   * - Starts rendering when webcam becomes active
+   * - Re-starts when filter settings change
+   * - Cleanup function cancels animation frame when component unmounts
+   * 
+   * Dependencies: isWebcamActive, selectedFilter, beautyMode, filterIntensity
+   * When any of these change, the effect re-runs to restart rendering with new settings
+   * 
+   * Learn more about useEffect:
+   * https://react.dev/reference/react/useEffect
+   */
   useEffect(() => {
     if (isWebcamActive) {
       renderFrame();
     }
 
+    // Cleanup function - runs when component unmounts or dependencies change
     return () => {
       if (animationFrameRef.current) {
+        // Cancel pending animation frame to prevent memory leaks
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity]);
 
+  /**
+   * Starts the webcam and begins video streaming
+   * 
+   * This async function:
+   * 1. Requests camera access using getUserMedia API
+   * 2. Attaches the stream to the video element
+   * 3. Waits for video metadata to load
+   * 4. Starts video playback
+   * 5. Updates state to trigger rendering
+   * 
+   * Error handling catches and displays permission denials or other camera issues
+   * 
+   * Learn more about getUserMedia:
+   * https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
+   */
   const startWebcam = async () => {
     try {
+      // Clear any previous errors
       setError(null);
+      
+      // Request camera access from the browser
+      // This will prompt the user for permission on first use
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: false
+        video: { width: 1280, height: 720 }, // Request HD resolution
+        audio: false // We don't need audio
       });
 
+      // Store the stream in a ref so we can stop it later
       streamRef.current = stream;
 
       if (videoRef.current) {
+        // Attach the media stream to the video element
         videoRef.current.srcObject = stream;
 
-        // Wait for video to be ready
+        // Wait for video metadata to load before playing
+        // This ensures video dimensions are available
         await new Promise((resolve) => {
           videoRef.current.onloadedmetadata = () => {
             videoRef.current.play();
@@ -213,32 +399,61 @@ function App() {
           };
         });
 
+        // Update state to start the rendering loop
         setIsWebcamActive(true);
       }
     } catch (err) {
+      // Handle errors (permission denied, no camera, etc.)
       console.error('Error accessing webcam:', err);
       setError('Unable to access webcam. Please ensure you have granted camera permissions.');
       setIsWebcamActive(false);
     }
   };
 
+  /**
+   * Stops the webcam and cleans up all resources
+   * 
+   * This function properly releases the camera by:
+   * 1. Canceling the animation frame loop
+   * 2. Stopping all media tracks (releases camera hardware)
+   * 3. Removing the stream from the video element
+   * 4. Resetting state
+   * 
+   * Important: Always stop tracks when done to free up the camera!
+   */
   const stopWebcam = () => {
+    // Cancel any pending animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
 
     if (streamRef.current) {
+      // Get all tracks (video and audio, though we only have video)
       const tracks = streamRef.current.getTracks();
+      
+      // Stop each track to release the camera
+      // This turns off the camera light and frees the hardware
       tracks.forEach(track => track.stop());
+      
+      // Remove the stream from the video element
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
+      
+      // Clear the stream reference
       streamRef.current = null;
+      
+      // Update state
       setIsWebcamActive(false);
       setSelectedFilter('none');
     }
   };
 
+  /**
+   * Smoothly scrolls to the app section
+   * 
+   * Uses the Scroll API with smooth behavior for a nice user experience
+   */
   const scrollToApp = () => {
     appSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
