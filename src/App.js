@@ -38,6 +38,23 @@ function App() {
   const [faceDetections, setFaceDetections] = useState([]);
   const faceDetectionIntervalRef = useRef(null);
 
+  // Face analysis feature toggles
+  /** Show bounding boxes around detected faces */
+  const [showBoundingBox, setShowBoundingBox] = useState(false);
+
+  /** Show expression recognition results */
+  const [showExpressions, setShowExpressions] = useState(false);
+
+  /** Enable landmark color groups for educational visualization */
+  const [landmarkColorMode, setLandmarkColorMode] = useState('none'); // 'none', 'all', 'groups'
+
+  // Face matching state
+  /** Reference face descriptor for comparison */
+  const [referenceDescriptor, setReferenceDescriptor] = useState(null);
+
+  /** Show face matching similarity */
+  const [showFaceMatching, setShowFaceMatching] = useState(false);
+
   const filters = [
     { id: 'none', name: 'Original', icon: '✨' },
     { id: 'grayscale', name: 'Grayscale', icon: '⚫' },
@@ -93,15 +110,30 @@ function App() {
     { id: 'pumpkin', name: 'Pumpkin', icon: '🎃', category: 'seasonal' },
   ];
 
-  // Load face-api.js models
+  /**
+   * Load Face-API.js Models
+   *
+   * Loads all required ML models for face detection features.
+   * Educational Note: These models run entirely in the browser using TensorFlow.js
+   *
+   * Models loaded:
+   * - Tiny Face Detector: Fast face detection (190KB)
+   * - Face Landmark 68: 68-point facial landmarks (350KB)
+   * - Face Expression: Emotion recognition (310KB)
+   * - Face Recognition: Face descriptors for matching (6.2MB)
+   */
   const loadFaceApiModels = async () => {
     try {
       console.log('Loading face-api.js models...');
       const MODEL_URL = '/models';
 
-      // Load Tiny Face Detector and Face Landmark models
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      // Load all models in parallel for faster initialization
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]);
 
       console.log('Face-api.js models loaded successfully!');
       faceDetectorRef.current = true; // Mark as loaded
@@ -113,7 +145,18 @@ function App() {
     }
   };
 
-  // Detect faces in the video using face-api.js
+  /**
+   * Detect Faces with Full Analysis
+   *
+   * Detects faces and optionally extracts:
+   * - Bounding boxes and confidence scores
+   * - 68 facial landmarks
+   * - Expression probabilities (7 emotions)
+   * - Face descriptors (for recognition)
+   *
+   * Educational Note: face-api.js uses method chaining to compose features.
+   * Each .with* method adds another analysis layer.
+   */
   const detectFaces = async () => {
     if (!faceDetectorRef.current) {
       return [];
@@ -133,15 +176,30 @@ function App() {
         return [];
       }
 
-      // Detect faces with landmarks using face-api.js
+      // Configure detection options
+      // inputSize: Higher = more accurate but slower (128-608)
+      // scoreThreshold: Confidence threshold (0-1)
       const options = new faceapi.TinyFaceDetectorOptions({
         inputSize: 416,
         scoreThreshold: 0.5
       });
 
-      const detections = await faceapi
+      // Build detection chain based on enabled features
+      let detectionChain = faceapi
         .detectAllFaces(video, options)
         .withFaceLandmarks();
+
+      // Add expression recognition if enabled
+      if (showExpressions) {
+        detectionChain = detectionChain.withFaceExpressions();
+      }
+
+      // Add face descriptors if face matching is enabled
+      if (showFaceMatching) {
+        detectionChain = detectionChain.withFaceDescriptors();
+      }
+
+      const detections = await detectionChain;
 
       return detections;
     } catch (err) {
@@ -150,21 +208,199 @@ function App() {
     }
   };
 
-  // Draw facial landmarks (for debugging)
+  /**
+   * Draw Facial Landmarks
+   *
+   * Draws 68 landmark points on detected faces.
+   * Educational Note: Supports color-coded groups for learning facial structure.
+   */
   const drawLandmarks = (ctx, detections) => {
-    if (!showLandmarks || detections.length === 0) return;
+    if (landmarkColorMode === 'none' || detections.length === 0) return;
 
     detections.forEach((detection) => {
       const landmarks = detection.landmarks.positions;
 
-      // Draw all 68 landmarks
-      landmarks.forEach((point) => {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
-        ctx.fillStyle = '#00FF00';
-        ctx.fill();
-      });
+      if (landmarkColorMode === 'all') {
+        // Draw all landmarks in green
+        landmarks.forEach((point) => {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+          ctx.fillStyle = '#00FF00';
+          ctx.fill();
+        });
+      } else if (landmarkColorMode === 'groups') {
+        // Draw color-coded groups for education
+        const drawGroup = (start, end, color) => {
+          for (let i = start; i <= end; i++) {
+            ctx.beginPath();
+            ctx.arc(landmarks[i].x, landmarks[i].y, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
+        };
+
+        drawGroup(0, 16, '#FF6B6B');    // Jaw - Red
+        drawGroup(17, 21, '#4ECDC4');   // Right Eyebrow - Cyan
+        drawGroup(22, 26, '#45B7D1');   // Left Eyebrow - Blue
+        drawGroup(27, 35, '#FFA07A');   // Nose - Orange
+        drawGroup(36, 41, '#98D8C8');   // Right Eye - Light Green
+        drawGroup(42, 47, '#6BCF7F');   // Left Eye - Green
+        drawGroup(48, 67, '#F7DC6F');   // Mouth - Yellow
+      }
     });
+  };
+
+  /**
+   * Draw Bounding Boxes
+   *
+   * Draws rectangles around detected faces with confidence scores.
+   * Educational Note: Shows detection confidence as a percentage.
+   */
+  const drawBoundingBoxes = (ctx, detections) => {
+    if (!showBoundingBox || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      const box = detection.detection.box;
+      const score = detection.detection.score;
+
+      // Draw rectangle
+      ctx.strokeStyle = '#00FF00';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+      // Draw confidence score
+      const confidence = Math.round(score * 100);
+      ctx.fillStyle = '#00FF00';
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText(`${confidence}%`, box.x, box.y - 5);
+    });
+  };
+
+  /**
+   * Draw Expression Recognition
+   *
+   * Displays detected emotions with emojis and probability bars.
+   * Educational Note: Shows ML model predictions for 7 emotion categories.
+   */
+  const drawExpressions = (ctx, detections) => {
+    if (!showExpressions || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      if (!detection.expressions) return;
+
+      const box = detection.detection.box;
+      const expressions = detection.expressions;
+
+      // Get dominant emotion
+      const dominant = Object.keys(expressions).reduce((a, b) =>
+        expressions[a] > expressions[b] ? a : b
+      );
+
+      // Emotion to emoji mapping
+      const emotionEmojis = {
+        neutral: '😐',
+        happy: '😊',
+        sad: '😢',
+        angry: '😠',
+        fearful: '😨',
+        disgusted: '🤢',
+        surprised: '😲'
+      };
+
+      // Draw dominant emotion with emoji
+      const emoji = emotionEmojis[dominant] || '😐';
+      ctx.font = '30px Arial';
+      ctx.fillText(emoji, box.x + box.width + 10, box.y + 30);
+
+      // Draw emotion name and percentage
+      const percentage = Math.round(expressions[dominant] * 100);
+      ctx.font = 'bold 14px Arial';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      ctx.strokeText(`${dominant} ${percentage}%`, box.x + box.width + 50, box.y + 35);
+      ctx.fillText(`${dominant} ${percentage}%`, box.x + box.width + 50, box.y + 35);
+    });
+  };
+
+  /**
+   * Draw Face Matching Similarity
+   *
+   * Shows similarity percentage when comparing to reference face.
+   * Educational Note: Uses euclidean distance between face descriptors.
+   */
+  const drawFaceMatching = (ctx, detections) => {
+    if (!showFaceMatching || !referenceDescriptor || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      if (!detection.descriptor) return;
+
+      const box = detection.detection.box;
+
+      // Calculate euclidean distance
+      const distance = faceapi.euclideanDistance(referenceDescriptor, detection.descriptor);
+
+      // Convert distance to similarity percentage (lower distance = higher similarity)
+      // Typical match: distance < 0.6, non-match: distance > 0.6
+      const similarity = Math.max(0, Math.min(100, (1 - distance) * 100));
+
+      // Draw similarity indicator
+      const color = similarity > 60 ? '#00FF00' : similarity > 40 ? '#FFA500' : '#FF0000';
+      ctx.fillStyle = color;
+      ctx.font = 'bold 18px Arial';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      const text = `Match: ${Math.round(similarity)}%`;
+      ctx.strokeText(text, box.x, box.y + box.height + 25);
+      ctx.fillText(text, box.x, box.y + box.height + 25);
+    });
+  };
+
+  /**
+   * Capture Reference Face for Matching
+   *
+   * Captures the current face descriptor to use as reference for comparison.
+   * Educational Note: Face descriptors are 128-dimensional vectors that uniquely identify faces.
+   */
+  const captureReferenceFace = async () => {
+    if (!videoRef.current || !faceDetectorRef.current) {
+      setError('Face detection not ready');
+      return;
+    }
+
+    try {
+      const video = videoRef.current;
+      const options = new faceapi.TinyFaceDetectorOptions({
+        inputSize: 416,
+        scoreThreshold: 0.5
+      });
+
+      const detection = await faceapi
+        .detectSingleFace(video, options)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection && detection.descriptor) {
+        setReferenceDescriptor(detection.descriptor);
+        setShowFaceMatching(true);
+        console.log('Reference face captured successfully!');
+      } else {
+        setError('No face detected. Please ensure your face is visible.');
+      }
+    } catch (err) {
+      console.error('Error capturing reference face:', err);
+      setError('Failed to capture reference face');
+    }
+  };
+
+  /**
+   * Clear Reference Face
+   *
+   * Removes the stored reference face descriptor.
+   */
+  const clearReferenceFace = () => {
+    setReferenceDescriptor(null);
+    setShowFaceMatching(false);
   };
 
   // Add a new sticker to the canvas
@@ -476,10 +712,20 @@ function App() {
         // Reset filter for overlays but keep same transform context
         ctx.filter = 'none';
 
-        // Draw face landmarks from stored state (non-blocking)
+        // Draw all face analysis features from stored state (non-blocking)
         // Face detection runs in separate loop at 10fps
         if (faceDetectionEnabled && faceDetections.length > 0) {
+          // Draw bounding boxes with confidence
+          drawBoundingBoxes(ctx, faceDetections);
+
+          // Draw facial landmarks (color-coded groups for education)
           drawLandmarks(ctx, faceDetections);
+
+          // Draw expression recognition results
+          drawExpressions(ctx, faceDetections);
+
+          // Draw face matching similarity
+          drawFaceMatching(ctx, faceDetections);
         }
 
         // Restore context once at the end
@@ -512,7 +758,7 @@ function App() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, showLandmarks]);
+  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, landmarkColorMode, showBoundingBox, showExpressions, showFaceMatching]);
 
   // Effect to control face detection loop (separate from rendering)
   useEffect(() => {
