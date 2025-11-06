@@ -12,6 +12,7 @@ function App() {
   const streamRef = useRef(null);
   const appSectionRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const renderingActiveRef = useRef(false);
 
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [showCaptureFlash, setShowCaptureFlash] = useState(false);
@@ -32,10 +33,18 @@ function App() {
   const [aiRecommendation, setAiRecommendation] = useState('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
 
+  // AI Vision Analysis state
+  /** Stores the AI skin analysis results */
+  const [skinAnalysisResult, setSkinAnalysisResult] = useState('');
+  /** Loading state for vision API analysis */
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   // Face detection data state (separate from rendering)
   /** Stores the most recent face detection results */
   const [faceDetections, setFaceDetections] = useState([]);
+  const faceDetectionsRef = useRef([]);
   const faceDetectionIntervalRef = useRef(null);
+  const faceDetectionRunningRef = useRef(false);
 
   // Face analysis feature toggles
   /** Show bounding boxes around detected faces */
@@ -184,6 +193,7 @@ function App() {
       });
 
       // Build detection chain based on enabled features
+      // Detect on the original video element (unmirrored)
       let detectionChain = faceapi
         .detectAllFaces(video, options)
         .withFaceLandmarks();
@@ -258,20 +268,28 @@ function App() {
   const drawBoundingBoxes = (ctx, detections) => {
     if (!showBoundingBox || detections.length === 0) return;
 
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     detections.forEach((detection) => {
       const box = detection.detection.box;
       const score = detection.detection.score;
 
+      // Canvas is mirrored with scale(-1, 1) and translate(-canvas.width, 0)
+      // Drawing operations are automatically mirrored by the transform
       // Draw rectangle
       ctx.strokeStyle = '#00FF00';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 5;
       ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-      // Draw confidence score
+      // Draw confidence score with un-mirrored text
       const confidence = Math.round(score * 100);
+      ctx.save();
+      ctx.scale(-1, 1);
       ctx.fillStyle = '#00FF00';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText(`${confidence}%`, box.x, box.y - 5);
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`${confidence}%`, -(box.x + box.width), box.y - 10);
+      ctx.restore();
     });
   };
 
@@ -306,19 +324,35 @@ function App() {
         surprised: '😲'
       };
 
+      // Save context state
+      ctx.save();
+
+      // Un-mirror the text by scaling back
+      ctx.scale(-1, 1);
+
+      // Position emoji and text ABOVE the bounding box
+      // Place them centered above the box
+      const emojiY = box.y - 60; // Position above the box
+      const textY = box.y - 10; // Text below emoji but still above box
+      const centerX = box.x + (box.width / 2); // Center of the box
+
       // Draw dominant emotion with emoji
       const emoji = emotionEmojis[dominant] || '😐';
-      ctx.font = '30px Arial';
-      ctx.fillText(emoji, box.x + box.width + 10, box.y + 30);
+      ctx.font = '48px Arial';
+      ctx.fillText(emoji, -centerX, emojiY);
 
-      // Draw emotion name and percentage
+      // Draw emotion name and percentage below the emoji
       const percentage = Math.round(expressions[dominant] * 100);
-      ctx.font = 'bold 14px Arial';
+      ctx.font = 'bold 18px Arial';
       ctx.fillStyle = '#FFFFFF';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3;
-      ctx.strokeText(`${dominant} ${percentage}%`, box.x + box.width + 50, box.y + 35);
-      ctx.fillText(`${dominant} ${percentage}%`, box.x + box.width + 50, box.y + 35);
+      ctx.lineWidth = 4;
+      const emotionText = `${dominant} ${percentage}%`;
+      ctx.strokeText(emotionText, -(centerX + 30), textY);
+      ctx.fillText(emotionText, -(centerX + 30), textY);
+
+      // Restore context
+      ctx.restore();
     });
   };
 
@@ -343,15 +377,18 @@ function App() {
       // Typical match: distance < 0.6, non-match: distance > 0.6
       const similarity = Math.max(0, Math.min(100, (1 - distance) * 100));
 
-      // Draw similarity indicator
+      // Draw similarity indicator with un-mirrored text
       const color = similarity > 60 ? '#00FF00' : similarity > 40 ? '#FFA500' : '#FF0000';
+      ctx.save();
+      ctx.scale(-1, 1);
       ctx.fillStyle = color;
       ctx.font = 'bold 18px Arial';
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
       const text = `Match: ${Math.round(similarity)}%`;
-      ctx.strokeText(text, box.x, box.y + box.height + 25);
-      ctx.fillText(text, box.x, box.y + box.height + 25);
+      ctx.strokeText(text, -(box.x + box.width), box.y + box.height + 25);
+      ctx.fillText(text, -(box.x + box.width), box.y + box.height + 25);
+      ctx.restore();
     });
   };
 
@@ -618,7 +655,7 @@ function App() {
 
     try {
       const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
       const currentTime = new Date().getHours();
       const timeOfDay = currentTime < 12 ? 'morning' : currentTime < 18 ? 'afternoon' : 'evening';
@@ -644,16 +681,132 @@ function App() {
   };
 
   /**
+   * Analyze Appearance with Gemini Vision API
+   *
+   * Educational Note: This demonstrates multimodal AI - sending both image and text to an AI model.
+   * The function captures the current webcam frame (without stickers), converts it to base64,
+   * and sends it to Gemini Vision API for personalized filter recommendations.
+   *
+   * Key Learning Points:
+   * - Canvas to base64 image conversion
+   * - Multimodal AI API integration
+   * - Async/await error handling
+   * - Image data URL format for APIs
+   */
+  const analyzeWithGeminiVision = async () => {
+    // Validate API key exists
+    if (!geminiKey) {
+      setError('Please configure your REACT_APP_GEMINI_API_KEY in .env file to use AI features');
+      return;
+    }
+
+    // Validate webcam is active
+    if (!isWebcamActive || !videoRef.current || !canvasRef.current) {
+      setError('Please start the webcam first to analyze your appearance');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setSkinAnalysisResult('');
+    setError(null);
+
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      // Create a temporary canvas to capture current frame WITHOUT stickers
+      // Educational Note: We create a clean capture for better AI analysis
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const ctx = tempCanvas.getContext('2d');
+
+      // Apply mirror transformation to match live view
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.translate(-tempCanvas.width, 0);
+
+      // Draw video with current filter (no stickers, no face detection overlays)
+      applyFilter(ctx, selectedFilter);
+      ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+      ctx.restore();
+
+      // Convert canvas to base64 image
+      // Educational Note: toDataURL returns format "data:image/png;base64,..."
+      // We need to extract just the base64 part for Gemini API
+      const imageDataUrl = tempCanvas.toDataURL('image/jpeg', 0.8); // Use JPEG for smaller size
+      const base64Image = imageDataUrl.split(',')[1]; // Remove "data:image/jpeg;base64," prefix
+
+      // Initialize Gemini Vision API
+      // Educational Note: Using gemini-2.5-flash for multimodal (image + text) analysis
+      const genAI = new GoogleGenerativeAI(geminiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      // Create prompt for personalized filter recommendations
+      const prompt = `You are an expert in photography, skin tones, and visual aesthetics. Analyze this person's appearance in the webcam photo and provide personalized filter recommendations.
+
+Available filters: ${filters.map(f => f.name).join(', ')}.
+
+Please analyze:
+1. Skin tone and undertones (warm/cool/neutral)
+2. Current lighting conditions
+3. Which 3 filters would look BEST on this person
+
+Respond in this format:
+**Skin Analysis:** [Brief 1-sentence analysis of skin tone and lighting]
+**Top 3 Recommended Filters:**
+1. [Filter Name] - [Why it suits them]
+2. [Filter Name] - [Why it suits them]
+3. [Filter Name] - [Why it suits them]
+
+Keep recommendations under 80 words total. Be specific and helpful.`;
+
+      // Send image and prompt to Gemini Vision API
+      // Educational Note: Multimodal AI accepts both text and images in a single request
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: base64Image
+          }
+        }
+      ]);
+
+      const response = await result.response;
+      const analysisText = response.text();
+
+      // Update state with results
+      setSkinAnalysisResult(analysisText);
+      setIsAnalyzing(false);
+
+      console.log('✅ AI Vision Analysis completed successfully!');
+    } catch (err) {
+      console.error('Error analyzing with Gemini Vision:', err);
+      setError(`Failed to analyze appearance: ${err.message || 'Please check your API key and try again'}`);
+      setSkinAnalysisResult('');
+      setIsAnalyzing(false);
+    }
+  };
+
+  /**
    * Face Detection Loop (Separate from Video Rendering)
    *
-   * This runs independently at 10fps to prevent slowing down the main video rendering.
+   * This runs independently at 30fps for smooth real-time tracking.
    * Educational Note: Separating ML inference from rendering prevents frame drops.
-   * The video renders at 60fps while face detection runs at 10fps.
+   * The video renders at 60fps while face detection runs at 30fps.
+   *
+   * Uses a ref-based flag to check if loop should continue, avoiding stale closures.
    */
   const faceDetectionLoop = async () => {
+    // Check running flag first - this allows proper stopping
+    if (!faceDetectionRunningRef.current) {
+      return;
+    }
+
     if (!videoRef.current || !faceDetectionEnabled || !isWebcamActive) {
       // Schedule next detection check
-      faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 100);
+      faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 33);
       return;
     }
 
@@ -663,16 +816,21 @@ function App() {
         // Detect faces with landmarks
         const detections = await detectFaces();
 
-        // Update state with new detections
-        // This will trigger re-render of landmarks on next frame
-        setFaceDetections(detections || []);
+        // Update both state and ref with new detections
+        // Ref ensures render loop always has latest data without re-rendering
+        const newDetections = detections || [];
+        faceDetectionsRef.current = newDetections;
+        setFaceDetections(newDetections);
       } catch (err) {
         console.error('Face detection error:', err);
       }
     }
 
-    // Schedule next detection (10fps = 100ms interval)
-    faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 100);
+    // Schedule next detection (30fps = 33ms interval for smoother tracking)
+    // Only if still running
+    if (faceDetectionRunningRef.current) {
+      faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 33);
+    }
   };
 
   /**
@@ -684,10 +842,15 @@ function App() {
    * computational tasks from rendering for optimal performance.
    */
   const renderFrame = () => {
+    // Check if rendering should continue
+    if (!renderingActiveRef.current) {
+      return;
+    }
+
     if (videoRef.current && canvasRef.current && isWebcamActive) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         // Set canvas dimensions to match video only if they've changed
@@ -711,27 +874,31 @@ function App() {
         // Reset filter for overlays but keep same transform context
         ctx.filter = 'none';
 
-        // Draw all face analysis features from stored state (non-blocking)
-        // Face detection runs in separate loop at 10fps
-        if (faceDetectionEnabled && faceDetections.length > 0) {
+        // Draw all face analysis features from ref (always has latest data)
+        // Face detection runs in separate loop at 30fps
+        const currentDetections = faceDetectionsRef.current;
+        if (faceDetectionEnabled && currentDetections.length > 0) {
           // Draw bounding boxes with confidence
-          drawBoundingBoxes(ctx, faceDetections);
+          drawBoundingBoxes(ctx, currentDetections);
 
           // Draw facial landmarks (color-coded groups for education)
-          drawLandmarks(ctx, faceDetections);
+          drawLandmarks(ctx, currentDetections);
 
           // Draw expression recognition results
-          drawExpressions(ctx, faceDetections);
+          drawExpressions(ctx, currentDetections);
 
           // Draw face matching similarity
-          drawFaceMatching(ctx, faceDetections);
+          drawFaceMatching(ctx, currentDetections);
         }
 
         // Restore context once at the end
         ctx.restore();
       }
 
-      animationFrameRef.current = requestAnimationFrame(renderFrame);
+      // Only schedule next frame if still active
+      if (renderingActiveRef.current) {
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+      }
     }
   };
 
@@ -739,21 +906,39 @@ function App() {
   useEffect(() => {
     loadFaceApiModels();
     // Load API key from environment variable
+    // Educational Note: REACT_APP_GEMINI_API_KEY is loaded from .env file for secure API key management
+    // In Create React App, custom env vars MUST start with REACT_APP_ to be accessible in browser
     const apiKey = process.env.REACT_APP_GEMINI_API_KEY || '';
     if (apiKey) {
       setGeminiKey(apiKey);
+      console.log('✅ Gemini API key loaded successfully from .env');
+    } else {
+      console.warn('⚠️ REACT_APP_GEMINI_API_KEY not found in .env file. AI features will be disabled.');
+      console.log('📚 Tutorial: Add your Gemini API key to .env file (see .env.example)');
     }
   }, []);
 
   // Effect to control video rendering loop
   useEffect(() => {
+    // Stop any existing render loop first
+    renderingActiveRef.current = false;
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
     if (isWebcamActive) {
+      // Start render loop with fresh closure
+      renderingActiveRef.current = true;
       renderFrame();
     }
 
     return () => {
+      // Cleanup: stop render loop
+      renderingActiveRef.current = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -761,22 +946,32 @@ function App() {
 
   // Effect to control face detection loop (separate from rendering)
   useEffect(() => {
+    // Stop any existing loop first
+    faceDetectionRunningRef.current = false;
+    if (faceDetectionIntervalRef.current) {
+      clearTimeout(faceDetectionIntervalRef.current);
+      faceDetectionIntervalRef.current = null;
+    }
+
     if (isWebcamActive && faceDetectionEnabled) {
-      // Start face detection loop
+      // Start face detection loop with fresh closure
+      faceDetectionRunningRef.current = true;
       faceDetectionLoop();
+    } else {
+      // Clear detections when disabled
+      setFaceDetections([]);
     }
 
     return () => {
       // Cleanup: stop face detection loop
+      faceDetectionRunningRef.current = false;
       if (faceDetectionIntervalRef.current) {
         clearTimeout(faceDetectionIntervalRef.current);
         faceDetectionIntervalRef.current = null;
       }
-      // Clear detections when disabled
-      setFaceDetections([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive, faceDetectionEnabled]);
+  }, [isWebcamActive, faceDetectionEnabled, showBoundingBox, showExpressions, landmarkColorMode, showFaceMatching]);
 
   const startWebcam = async () => {
     try {
@@ -1200,7 +1395,10 @@ function App() {
                       <button
                         key={filter.id}
                         className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
-                        onClick={() => setSelectedFilter(filter.id)}
+                        onClick={() => {
+                          // Toggle: if already selected, deselect (set to 'none')
+                          setSelectedFilter(selectedFilter === filter.id ? 'none' : filter.id);
+                        }}
                       >
                         <span className="filter-icon">{filter.icon}</span>
                         <span className="filter-name">{filter.name}</span>
@@ -1358,6 +1556,73 @@ function App() {
                       <div className="ai-recommendation">
                         <p><strong>AI:</strong> {aiRecommendation}</p>
                       </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Skin Analysis - Vision API */}
+                <div className="control-panel">
+                  <h3 className="panel-title">🔬 AI Skin Analysis</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
+                    Get personalized filter recommendations based on your appearance
+                  </p>
+                  <div className="control-group">
+                    <button
+                      className="ai-button"
+                      onClick={analyzeWithGeminiVision}
+                      disabled={isAnalyzing || !isWebcamActive}
+                      style={{
+                        width: '100%',
+                        background: isAnalyzing ? 'rgba(168, 85, 247, 0.3)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        cursor: isAnalyzing || !isWebcamActive ? 'not-allowed' : 'pointer',
+                        opacity: isAnalyzing || !isWebcamActive ? 0.6 : 1
+                      }}
+                    >
+                      {isAnalyzing ? '🔍 Analyzing...' : '📸 Analyze My Appearance'}
+                    </button>
+
+                    {!isWebcamActive && (
+                      <p style={{
+                        color: 'rgba(255, 200, 100, 0.9)',
+                        fontSize: '0.85rem',
+                        marginTop: '10px',
+                        fontStyle: 'italic'
+                      }}>
+                        ⚠️ Start webcam first to use this feature
+                      </p>
+                    )}
+
+                    {skinAnalysisResult && (
+                      <div
+                        className="ai-recommendation"
+                        style={{
+                          marginTop: '15px',
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          border: '1px solid rgba(102, 126, 234, 0.3)',
+                          borderRadius: '12px',
+                          padding: '15px',
+                          maxHeight: '300px',
+                          overflowY: 'auto'
+                        }}
+                      >
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                          {skinAnalysisResult}
+                        </div>
+                      </div>
+                    )}
+
+                    {!geminiKey && (
+                      <p style={{
+                        color: 'rgba(255, 100, 100, 0.9)',
+                        fontSize: '0.85rem',
+                        marginTop: '10px',
+                        padding: '10px',
+                        background: 'rgba(255, 0, 0, 0.1)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 0, 0, 0.3)'
+                      }}>
+                        🔑 API Key Required: Add REACT_APP_GEMINI_API_KEY to your .env file (see .env.example)
+                      </p>
                     )}
                   </div>
                 </div>
