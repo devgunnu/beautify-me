@@ -1,72 +1,68 @@
-/**
- * Beautify Me - Main Application Component
- * 
- * This is the main React component that contains all the webcam filter functionality.
- * It demonstrates several key React and Web API concepts:
- * - React Hooks (useState, useRef, useEffect)
- * - WebRTC API for camera access
- * - Canvas API for video manipulation
- * - Real-time rendering with requestAnimationFrame
- * 
- * Educational Notes for Beginners:
- * - Components are the building blocks of React applications
- * - This uses a functional component with hooks (modern React)
- * - State (useState) manages data that changes over time
- * - Refs (useRef) hold references to DOM elements and persist across renders
- * - Effects (useEffect) handle side effects like starting/stopping animations
- */
-
 import React, { useRef, useState, useEffect } from 'react';
 import './App.css';
+import * as faceapi from '@vladmandic/face-api';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 function App() {
-  // ===== REACT REFS =====
-  // Refs allow us to directly access DOM elements and store mutable values
-  // that persist between renders without causing re-renders
-  
-  /** Reference to the HTML video element that displays the webcam stream */
   const videoRef = useRef(null);
-  
-  /** Reference to the HTML canvas element where we draw filtered video */
   const canvasRef = useRef(null);
-  
-  /** Reference to store the MediaStream object from getUserMedia */
-  const streamRef = useRef(null);
-  
-  /** Reference to the app section for smooth scrolling */
-  const appSectionRef = useRef(null);
-  
-  /** Reference to the animation frame ID for rendering loop */
-  const animationFrameRef = useRef(null);
-
-  // ===== REACT STATE =====
-  // State variables that trigger re-renders when changed
-  // Syntax: const [value, setValue] = useState(initialValue)
-  
-  /** Tracks whether the webcam is currently active */
   const [isWebcamActive, setIsWebcamActive] = useState(false);
-  
-  /** Stores error messages to display to the user */
   const [error, setError] = useState(null);
-  
-  /** Currently selected filter ID (e.g., 'grayscale', 'sepia') */
   const [selectedFilter, setSelectedFilter] = useState('none');
-  
-  /** Data URL of the captured photo (base64 encoded image) */
+  const streamRef = useRef(null);
+  const appSectionRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const renderingActiveRef = useRef(false);
+
   const [capturedPhoto, setCapturedPhoto] = useState(null);
-  
-  /** Controls the camera flash animation when capturing photos */
   const [showCaptureFlash, setShowCaptureFlash] = useState(false);
-  
-  /** Filter intensity value from 0-100 (percentage) */
   const [filterIntensity, setFilterIntensity] = useState(100);
-  
-  /** Toggles beauty mode (skin smoothing) on/off */
   const [beautyMode, setBeautyMode] = useState(false);
 
-  // ===== FILTER DEFINITIONS =====
-  // Array of all available filters with their metadata
-  // Each filter has: id (unique identifier), name (display name), icon (emoji)
+  // Face detection state
+  const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(false);
+  const faceDetectorRef = useRef(null);
+
+  // Draggable stickers state
+  const [placedStickers, setPlacedStickers] = useState([]);
+  const [draggingSticker, setDraggingSticker] = useState(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  // AI state
+  const [geminiKey, setGeminiKey] = useState('');
+  const [aiRecommendation, setAiRecommendation] = useState('');
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+
+  // AI Vision Analysis state
+  /** Stores the AI skin analysis results */
+  const [skinAnalysisResult, setSkinAnalysisResult] = useState('');
+  /** Loading state for vision API analysis */
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Face detection data state (separate from rendering)
+  /** Stores the most recent face detection results */
+  const [faceDetections, setFaceDetections] = useState([]);
+  const faceDetectionsRef = useRef([]);
+  const faceDetectionIntervalRef = useRef(null);
+  const faceDetectionRunningRef = useRef(false);
+
+  // Face analysis feature toggles
+  /** Show bounding boxes around detected faces */
+  const [showBoundingBox, setShowBoundingBox] = useState(false);
+
+  /** Show expression recognition results */
+  const [showExpressions, setShowExpressions] = useState(false);
+
+  /** Enable landmark color groups for educational visualization */
+  const [landmarkColorMode, setLandmarkColorMode] = useState('none'); // 'none', 'all', 'groups'
+
+  // Face matching state
+  /** Reference face descriptor for comparison */
+  const [referenceDescriptor, setReferenceDescriptor] = useState(null);
+
+  /** Show face matching similarity */
+  const [showFaceMatching, setShowFaceMatching] = useState(false);
+
   const filters = [
     { id: 'none', name: 'Original', icon: '✨' },
     { id: 'grayscale', name: 'Grayscale', icon: '⚫' },
@@ -90,308 +86,907 @@ function App() {
     { id: 'neon', name: 'Neon', icon: '💡' },
   ];
 
+  // Stickers Definition (simplified - no landmarks needed)
+  const stickers = [
+    // Animals
+    { id: 'dog', name: 'Dog', icon: '🐶', category: 'animals' },
+    { id: 'cat', name: 'Cat', icon: '🐱', category: 'animals' },
+    { id: 'bunny', name: 'Bunny', icon: '🐰', category: 'animals' },
+    { id: 'bear', name: 'Bear', icon: '🐻', category: 'animals' },
+    { id: 'panda', name: 'Panda', icon: '🐼', category: 'animals' },
+
+    // Accessories
+    { id: 'glasses', name: 'Glasses', icon: '🕶️', category: 'accessories' },
+    { id: 'crown', name: 'Crown', icon: '👑', category: 'accessories' },
+    { id: 'hat', name: 'Hat', icon: '🎩', category: 'accessories' },
+    { id: 'party-hat', name: 'Party Hat', icon: '🎉', category: 'accessories' },
+
+    // Fun
+    { id: 'hearts', name: 'Hearts', icon: '💕', category: 'fun' },
+    { id: 'stars', name: 'Stars', icon: '⭐', category: 'fun' },
+    { id: 'sparkles', name: 'Sparkles', icon: '✨', category: 'fun' },
+    { id: 'flowers', name: 'Flowers', icon: '🌸', category: 'fun' },
+
+    // Expressions
+    { id: 'laugh', name: 'LOL', icon: '😂', category: 'expressions' },
+    { id: 'cool', name: 'Cool', icon: '😎', category: 'expressions' },
+    { id: 'fire', name: 'Fire', icon: '🔥', category: 'expressions' },
+
+    // Seasonal
+    { id: 'santa', name: 'Santa', icon: '🎅', category: 'seasonal' },
+    { id: 'snowflake', name: 'Snowflake', icon: '❄️', category: 'seasonal' },
+    { id: 'pumpkin', name: 'Pumpkin', icon: '🎃', category: 'seasonal' },
+  ];
+
   /**
-   * Applies CSS filters to the canvas context
-   * 
-   * This function builds a CSS filter string based on the selected filter type
-   * and applies it to the canvas 2D context. Filters are applied before drawing
-   * each video frame.
-   * 
-   * @param {CanvasRenderingContext2D} ctx - The 2D rendering context
-   * @param {string} filterType - The ID of the filter to apply
-   * 
-   * Learn more about CSS filters:
-   * https://developer.mozilla.org/en-US/docs/Web/CSS/filter
+   * Load Face-API.js Models
+   *
+   * Loads all required ML models for face detection features.
+   * Educational Note: These models run entirely in the browser using TensorFlow.js
+   *
+   * Models loaded:
+   * - Tiny Face Detector: Fast face detection (190KB)
+   * - Face Landmark 68: 68-point facial landmarks (350KB)
+   * - Face Expression: Emotion recognition (310KB)
+   * - Face Recognition: Face descriptors for matching (6.2MB)
    */
+  const loadFaceApiModels = async () => {
+    try {
+      console.log('Loading face-api.js models...');
+      const MODEL_URL = '/models';
+
+      // Load all models in parallel for faster initialization
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]);
+
+      console.log('Face-api.js models loaded successfully!');
+      faceDetectorRef.current = true; // Mark as loaded
+      return true;
+    } catch (err) {
+      console.error('Error loading face-api models:', err);
+      setError('Failed to load face detection models: ' + err.message);
+      return false;
+    }
+  };
+
+  /**
+   * Detect Faces with Full Analysis
+   *
+   * Detects faces and optionally extracts:
+   * - Bounding boxes and confidence scores
+   * - 68 facial landmarks
+   * - Expression probabilities (7 emotions)
+   * - Face descriptors (for recognition)
+   *
+   * Educational Note: face-api.js uses method chaining to compose features.
+   * Each .with* method adds another analysis layer.
+   */
+  const detectFaces = async () => {
+    if (!faceDetectorRef.current) {
+      return [];
+    }
+
+    if (!videoRef.current) {
+      return [];
+    }
+
+    if (!faceDetectionEnabled) {
+      return [];
+    }
+
+    try {
+      const video = videoRef.current;
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+        return [];
+      }
+
+      // Configure detection options
+      // inputSize: Higher = more accurate but slower (128-608)
+      // scoreThreshold: Confidence threshold (0-1)
+      const options = new faceapi.TinyFaceDetectorOptions({
+        inputSize: 416,
+        scoreThreshold: 0.5
+      });
+
+      // Build detection chain based on enabled features
+      // Detect on the original video element (unmirrored)
+      let detectionChain = faceapi
+        .detectAllFaces(video, options)
+        .withFaceLandmarks();
+
+      // Add expression recognition if enabled
+      if (showExpressions) {
+        detectionChain = detectionChain.withFaceExpressions();
+      }
+
+      // Add face descriptors if face matching is enabled
+      if (showFaceMatching) {
+        detectionChain = detectionChain.withFaceDescriptors();
+      }
+
+      const detections = await detectionChain;
+
+      return detections;
+    } catch (err) {
+      console.error('Error detecting faces:', err);
+      return [];
+    }
+  };
+
+  /**
+   * Draw Facial Landmarks
+   *
+   * Draws 68 landmark points on detected faces.
+   * Educational Note: Supports color-coded groups for learning facial structure.
+   */
+  const drawLandmarks = (ctx, detections) => {
+    if (landmarkColorMode === 'none' || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      const landmarks = detection.landmarks.positions;
+
+      if (landmarkColorMode === 'all') {
+        // Draw all landmarks in green
+        landmarks.forEach((point) => {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+          ctx.fillStyle = '#00FF00';
+          ctx.fill();
+        });
+      } else if (landmarkColorMode === 'groups') {
+        // Draw color-coded groups for education
+        const drawGroup = (start, end, color) => {
+          for (let i = start; i <= end; i++) {
+            ctx.beginPath();
+            ctx.arc(landmarks[i].x, landmarks[i].y, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
+        };
+
+        drawGroup(0, 16, '#FF6B6B');    // Jaw - Red
+        drawGroup(17, 21, '#4ECDC4');   // Right Eyebrow - Cyan
+        drawGroup(22, 26, '#45B7D1');   // Left Eyebrow - Blue
+        drawGroup(27, 35, '#FFA07A');   // Nose - Orange
+        drawGroup(36, 41, '#98D8C8');   // Right Eye - Light Green
+        drawGroup(42, 47, '#6BCF7F');   // Left Eye - Green
+        drawGroup(48, 67, '#F7DC6F');   // Mouth - Yellow
+      }
+    });
+  };
+
+  /**
+   * Draw Bounding Boxes
+   *
+   * Draws rectangles around detected faces with confidence scores.
+   * Educational Note: Shows detection confidence as a percentage.
+   */
+  const drawBoundingBoxes = (ctx, detections) => {
+    if (!showBoundingBox || detections.length === 0) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    detections.forEach((detection) => {
+      const box = detection.detection.box;
+      const score = detection.detection.score;
+
+      // Canvas is mirrored with scale(-1, 1) and translate(-canvas.width, 0)
+      // Drawing operations are automatically mirrored by the transform
+      // Draw rectangle
+      ctx.strokeStyle = '#00FF00';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+      // Draw confidence score with un-mirrored text
+      const confidence = Math.round(score * 100);
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.fillStyle = '#00FF00';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`${confidence}%`, -(box.x + box.width), box.y - 10);
+      ctx.restore();
+    });
+  };
+
+  /**
+   * Draw Expression Recognition
+   *
+   * Displays detected emotions with emojis and probability bars.
+   * Educational Note: Shows ML model predictions for 7 emotion categories.
+   */
+  const drawExpressions = (ctx, detections) => {
+    if (!showExpressions || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      if (!detection.expressions) return;
+
+      const box = detection.detection.box;
+      const expressions = detection.expressions;
+
+      // Get dominant emotion
+      const dominant = Object.keys(expressions).reduce((a, b) =>
+        expressions[a] > expressions[b] ? a : b
+      );
+
+      // Emotion to emoji mapping
+      const emotionEmojis = {
+        neutral: '😐',
+        happy: '😊',
+        sad: '😢',
+        angry: '😠',
+        fearful: '😨',
+        disgusted: '🤢',
+        surprised: '😲'
+      };
+
+      // Save context state
+      ctx.save();
+
+      // Un-mirror the text by scaling back
+      ctx.scale(-1, 1);
+
+      // Position emoji and text ABOVE the bounding box
+      // Place them centered above the box
+      const emojiY = box.y - 60; // Position above the box
+      const textY = box.y - 10; // Text below emoji but still above box
+      const centerX = box.x + (box.width / 2); // Center of the box
+
+      // Draw dominant emotion with emoji
+      const emoji = emotionEmojis[dominant] || '😐';
+      ctx.font = '48px Arial';
+      ctx.fillText(emoji, -centerX, emojiY);
+
+      // Draw emotion name and percentage below the emoji
+      const percentage = Math.round(expressions[dominant] * 100);
+      ctx.font = 'bold 18px Arial';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 4;
+      const emotionText = `${dominant} ${percentage}%`;
+      ctx.strokeText(emotionText, -(centerX + 30), textY);
+      ctx.fillText(emotionText, -(centerX + 30), textY);
+
+      // Restore context
+      ctx.restore();
+    });
+  };
+
+  /**
+   * Draw Face Matching Similarity
+   *
+   * Shows similarity percentage when comparing to reference face.
+   * Educational Note: Uses euclidean distance between face descriptors.
+   */
+  const drawFaceMatching = (ctx, detections) => {
+    if (!showFaceMatching || !referenceDescriptor || detections.length === 0) return;
+
+    detections.forEach((detection) => {
+      if (!detection.descriptor) return;
+
+      const box = detection.detection.box;
+
+      // Calculate euclidean distance
+      const distance = faceapi.euclideanDistance(referenceDescriptor, detection.descriptor);
+
+      // Convert distance to similarity percentage (lower distance = higher similarity)
+      // Typical match: distance < 0.6, non-match: distance > 0.6
+      const similarity = Math.max(0, Math.min(100, (1 - distance) * 100));
+
+      // Draw similarity indicator with un-mirrored text
+      const color = similarity > 60 ? '#00FF00' : similarity > 40 ? '#FFA500' : '#FF0000';
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 18px Arial';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      const text = `Match: ${Math.round(similarity)}%`;
+      ctx.strokeText(text, -(box.x + box.width), box.y + box.height + 25);
+      ctx.fillText(text, -(box.x + box.width), box.y + box.height + 25);
+      ctx.restore();
+    });
+  };
+
+  /**
+   * Capture Reference Face for Matching
+   *
+   * Captures the current face descriptor to use as reference for comparison.
+   * Educational Note: Face descriptors are 128-dimensional vectors that uniquely identify faces.
+   */
+  const captureReferenceFace = async () => {
+    if (!videoRef.current || !faceDetectorRef.current) {
+      setError('Face detection not ready');
+      return;
+    }
+
+    try {
+      const video = videoRef.current;
+      const options = new faceapi.TinyFaceDetectorOptions({
+        inputSize: 416,
+        scoreThreshold: 0.5
+      });
+
+      const detection = await faceapi
+        .detectSingleFace(video, options)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection && detection.descriptor) {
+        setReferenceDescriptor(detection.descriptor);
+        setShowFaceMatching(true);
+        console.log('Reference face captured successfully!');
+      } else {
+        setError('No face detected. Please ensure your face is visible.');
+      }
+    } catch (err) {
+      console.error('Error capturing reference face:', err);
+      setError('Failed to capture reference face');
+    }
+  };
+
+  /**
+   * Clear Reference Face
+   *
+   * Removes the stored reference face descriptor.
+   */
+  const clearReferenceFace = () => {
+    setReferenceDescriptor(null);
+    setShowFaceMatching(false);
+  };
+
+  // Add a new sticker to the canvas
+  const addSticker = (stickerTemplate) => {
+    const newSticker = {
+      id: `${stickerTemplate.id}-${Date.now()}`,
+      icon: stickerTemplate.icon,
+      name: stickerTemplate.name,
+      x: 50, // Percentage from left
+      y: 50, // Percentage from top
+      size: 60, // px
+      rotation: 0,
+    };
+    setPlacedStickers([...placedStickers, newSticker]);
+  };
+
+  // Remove a sticker
+  const removeSticker = (stickerId) => {
+    setPlacedStickers(placedStickers.filter(s => s.id !== stickerId));
+  };
+
+  // Handle sticker drag start
+  const handleStickerDragStart = (e, sticker) => {
+    e.preventDefault();
+    setDraggingSticker(sticker.id);
+
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+    dragOffsetRef.current = {
+      x: clientX - rect.left - (sticker.x * rect.width / 100),
+      y: clientY - rect.top - (sticker.y * rect.height / 100),
+    };
+  };
+
+  // Handle sticker drag move
+  const handleStickerDragMove = (e) => {
+    if (!draggingSticker) return;
+
+    const container = document.querySelector('.video-container');
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+    const x = ((clientX - rect.left - dragOffsetRef.current.x) / rect.width) * 100;
+    const y = ((clientY - rect.top - dragOffsetRef.current.y) / rect.height) * 100;
+
+    setPlacedStickers(placedStickers.map(s =>
+      s.id === draggingSticker
+        ? { ...s, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+        : s
+    ));
+  };
+
+  // Handle sticker drag end
+  const handleStickerDragEnd = () => {
+    setDraggingSticker(null);
+  };
+
   const applyFilter = (ctx, filterType) => {
-    // Convert intensity from 0-100 to 0-1 for calculations
     const intensity = filterIntensity / 100;
     let filterString = '';
 
-    // Build filter string based on selected type
-    // Each case uses CSS filter functions with calculated values
+    // Build base filter based on type
     switch (filterType) {
       case 'grayscale':
-        // Converts image to grayscale (black and white)
         filterString = `grayscale(${100 * intensity}%)`;
         break;
       case 'sepia':
-        // Gives the image a warm, brownish tone (vintage photography effect)
         filterString = `sepia(${100 * intensity}%)`;
         break;
       case 'invert':
-        // Inverts all colors (like a photo negative)
         filterString = `invert(${100 * intensity}%)`;
         break;
       case 'brightness':
-        // Increases brightness. 1 = normal, >1 = brighter
         const brightVal = 1 + (0.3 * intensity);
         filterString = `brightness(${brightVal})`;
         break;
       case 'contrast':
-        // Increases contrast between light and dark areas
         const contrastVal = 1 + (0.5 * intensity);
         filterString = `contrast(${contrastVal})`;
         break;
       case 'saturate':
-        // Boosts color saturation (makes colors more vibrant)
         const saturateVal = 1 + (1 * intensity);
         filterString = `saturate(${saturateVal})`;
         break;
       case 'blur':
-        // Applies gaussian blur effect
         const blurVal = 3 * intensity;
         filterString = `blur(${blurVal}px)`;
         break;
       case 'vintage':
-        // Combines multiple filters for a vintage camera look
         filterString = `sepia(${50 * intensity}%) contrast(${1 + 0.2 * intensity}) brightness(${1 - 0.1 * intensity})`;
         break;
       case 'cool':
-        // Shifts colors towards blue/cyan tones
         filterString = `hue-rotate(${180 * intensity}deg) saturate(${1 + 0.3 * intensity})`;
         break;
       case 'warm':
-        // Adds warm orange/yellow tones
         filterString = `sepia(${30 * intensity}%) saturate(${1 + 0.4 * intensity}) brightness(${1 + 0.1 * intensity})`;
         break;
       case 'dramatic':
-        // High contrast, dark shadows, intense colors
         filterString = `contrast(${1 + 0.5 * intensity}) brightness(${1 - 0.1 * intensity}) saturate(${1 + 0.3 * intensity})`;
         break;
       case 'moonlight':
-        // Cool, desaturated look with blue tones
         filterString = `brightness(${1 - 0.2 * intensity}) contrast(${1 + 0.2 * intensity}) saturate(${1 - 0.3 * intensity}) hue-rotate(${200 * intensity}deg)`;
         break;
       case 'sunset':
-        // Warm, golden-hour photography look
         filterString = `sepia(${40 * intensity}%) saturate(${1 + 0.5 * intensity}) brightness(${1 + 0.1 * intensity}) hue-rotate(${-10 * intensity}deg)`;
         break;
       case 'ocean':
-        // Aqua/teal color shift
         filterString = `hue-rotate(${180 * intensity}deg) saturate(${1 + 0.4 * intensity}) brightness(${1 + 0.1 * intensity})`;
         break;
       case 'rose':
-        // Pink/magenta color tones
         filterString = `hue-rotate(${320 * intensity}deg) saturate(${1 + 0.3 * intensity}) brightness(${1 + 0.05 * intensity})`;
         break;
       case 'noir':
-        // Film noir style: high contrast black and white
         filterString = `grayscale(${100 * intensity}%) contrast(${1 + 0.8 * intensity}) brightness(${1 - 0.1 * intensity})`;
         break;
       case 'cyberpunk':
-        // Neon purple/pink cyberpunk aesthetic
         filterString = `hue-rotate(${270 * intensity}deg) saturate(${1 + 1 * intensity}) contrast(${1 + 0.3 * intensity})`;
         break;
       case 'pastel':
-        // Soft, muted pastel colors
         filterString = `saturate(${1 - 0.4 * intensity}) brightness(${1 + 0.2 * intensity}) contrast(${1 - 0.1 * intensity})`;
         break;
       case 'neon':
-        // Ultra-saturated, bright neon colors
         filterString = `saturate(${1 + 1.5 * intensity}) contrast(${1 + 0.4 * intensity}) brightness(${1 + 0.2 * intensity})`;
         break;
       default:
-        // No filter applied
         filterString = 'none';
     }
 
-    // Apply beauty mode if enabled (adds subtle blur and brightness for smoother skin)
+    // Apply beauty mode if enabled
     if (beautyMode) {
       if (filterString === 'none') {
         filterString = 'blur(0.5px) brightness(1.05)';
       } else {
-        // Append beauty mode to existing filter
         filterString += ' blur(0.5px) brightness(1.05)';
       }
     }
 
-    // Set the filter on the canvas context
-    // This affects all subsequent drawing operations
     ctx.filter = filterString;
   };
 
-  /**
-   * Captures the current filtered video frame as a photo
-   * 
-   * Process:
-   * 1. Shows a flash animation
-   * 2. Converts the canvas content to a data URL (base64 PNG image)
-   * 3. Stores the image data in state
-   * 4. Hides the flash after 200ms
-   * 
-   * Learn more about toDataURL:
-   * https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toDataURL
-   */
   const capturePhoto = () => {
     if (canvasRef.current) {
-      // Show the white flash effect
       setShowCaptureFlash(true);
 
-      // Convert canvas to base64-encoded PNG image
-      // toDataURL returns: "data:image/png;base64,iVBORw0KG..."
-      const imageData = canvasRef.current.toDataURL('image/png');
+      // Create a composite canvas with stickers
+      const originalCanvas = canvasRef.current;
+      const compositeCanvas = document.createElement('canvas');
+      compositeCanvas.width = originalCanvas.width;
+      compositeCanvas.height = originalCanvas.height;
+      const ctx = compositeCanvas.getContext('2d');
+
+      // Draw the original canvas (video + filters + landmarks)
+      ctx.drawImage(originalCanvas, 0, 0);
+
+      // Draw placed stickers on top
+      if (placedStickers.length > 0) {
+        // Apply mirror transformation to match live view
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.translate(-compositeCanvas.width, 0);
+
+        placedStickers.forEach((sticker) => {
+          const x = (sticker.x / 100) * compositeCanvas.width;
+          const y = (sticker.y / 100) * compositeCanvas.height;
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((sticker.rotation * Math.PI) / 180);
+          ctx.font = `${sticker.size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(sticker.icon, 0, 0);
+          ctx.restore();
+        });
+
+        ctx.restore();
+      }
+
+      // Create image from composite canvas
+      const imageData = compositeCanvas.toDataURL('image/png');
       setCapturedPhoto(imageData);
 
-      // Remove flash animation after 200ms
+      // Remove flash after animation
       setTimeout(() => setShowCaptureFlash(false), 200);
     }
   };
 
-  /**
-   * Downloads the captured photo to the user's computer
-   * 
-   * Creates a temporary <a> element with a download attribute,
-   * sets the href to the image data URL, and programmatically clicks it.
-   */
   const downloadPhoto = () => {
     if (capturedPhoto) {
-      // Create a temporary link element
       const link = document.createElement('a');
-      
-      // Set filename with timestamp for uniqueness
       link.download = `beautify-me-${Date.now()}.png`;
-      
-      // Set the image data as the link target
       link.href = capturedPhoto;
-      
-      // Trigger the download
       link.click();
     }
   };
 
-  /**
-   * Closes the photo preview modal
-   */
   const closeCapturedPhoto = () => {
     setCapturedPhoto(null);
   };
 
+  // Gemini AI Functions
+  const getAIRecommendation = async () => {
+    if (!geminiKey) {
+      setError('Please enter your Gemini API key to use AI features');
+      return;
+    }
+
+    setIsAiProcessing(true);
+    setAiRecommendation('');
+    setError(null);
+
+    try {
+      const genAI = new GoogleGenerativeAI(geminiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      const currentTime = new Date().getHours();
+      const timeOfDay = currentTime < 12 ? 'morning' : currentTime < 18 ? 'afternoon' : 'evening';
+
+      const prompt = `You are a photography and filter expert. Suggest ONE of the best filters from this list for a webcam photo during the ${timeOfDay}:
+
+      Available filters: ${filters.map(f => f.name).join(', ')}.
+
+      Respond with ONLY the filter name and one brief sentence explaining why it's good for this time of day. Keep it under 30 words.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      setAiRecommendation(text);
+      setIsAiProcessing(false);
+    } catch (err) {
+      console.error('Error getting AI recommendation:', err);
+      setError(`Failed to get AI recommendation: ${err.message || 'Check your API key'}`);
+      setAiRecommendation('');
+      setIsAiProcessing(false);
+    }
+  };
+
   /**
-   * Main rendering loop that draws video frames to canvas with filters
-   * 
-   * This function is called repeatedly using requestAnimationFrame for smooth
-   * 60 FPS rendering. It's the heart of the real-time filter application.
-   * 
-   * Process for each frame:
-   * 1. Check if video has enough data
-   * 2. Resize canvas to match video dimensions
-   * 3. Clear previous frame
-   * 4. Apply transformations (mirror effect)
-   * 5. Apply selected filter
-   * 6. Draw video frame to canvas
-   * 7. Schedule next frame
-   * 
-   * Learn more about requestAnimationFrame:
-   * https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
+   * Analyze Appearance with Gemini Vision API
+   *
+   * Educational Note: This demonstrates multimodal AI - sending both image and text to an AI model.
+   * The function captures the current webcam frame (without stickers), converts it to base64,
+   * and sends it to Gemini Vision API for personalized filter recommendations.
+   *
+   * Key Learning Points:
+   * - Canvas to base64 image conversion
+   * - Multimodal AI API integration
+   * - Async/await error handling
+   * - Image data URL format for APIs
+   */
+  const analyzeWithGeminiVision = async () => {
+    // Validate API key exists
+    if (!geminiKey) {
+      setError('Please configure your REACT_APP_GEMINI_API_KEY in .env file to use AI features');
+      return;
+    }
+
+    // Validate webcam is active
+    if (!isWebcamActive || !videoRef.current || !canvasRef.current) {
+      setError('Please start the webcam first to analyze your appearance');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setSkinAnalysisResult('');
+    setError(null);
+
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      // Create a temporary canvas to capture current frame WITHOUT stickers
+      // Educational Note: We create a clean capture for better AI analysis
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const ctx = tempCanvas.getContext('2d');
+
+      // Apply mirror transformation to match live view
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.translate(-tempCanvas.width, 0);
+
+      // Draw video with current filter (no stickers, no face detection overlays)
+      applyFilter(ctx, selectedFilter);
+      ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+      ctx.restore();
+
+      // Convert canvas to base64 image
+      // Educational Note: toDataURL returns format "data:image/png;base64,..."
+      // We need to extract just the base64 part for Gemini API
+      const imageDataUrl = tempCanvas.toDataURL('image/jpeg', 0.8); // Use JPEG for smaller size
+      const base64Image = imageDataUrl.split(',')[1]; // Remove "data:image/jpeg;base64," prefix
+
+      // Initialize Gemini Vision API
+      // Educational Note: Using gemini-2.5-flash for multimodal (image + text) analysis
+      const genAI = new GoogleGenerativeAI(geminiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      // Create prompt for personalized filter recommendations
+      const prompt = `You are an expert in photography, skin tones, and visual aesthetics. Analyze this person's appearance in the webcam photo and provide personalized filter recommendations.
+
+Available filters: ${filters.map(f => f.name).join(', ')}.
+
+Please analyze:
+1. Skin tone and undertones (warm/cool/neutral)
+2. Current lighting conditions
+3. Which 3 filters would look BEST on this person
+
+Respond in this format:
+**Skin Analysis:** [Brief 1-sentence analysis of skin tone and lighting]
+**Top 3 Recommended Filters:**
+1. [Filter Name] - [Why it suits them]
+2. [Filter Name] - [Why it suits them]
+3. [Filter Name] - [Why it suits them]
+
+Keep recommendations under 80 words total. Be specific and helpful.`;
+
+      // Send image and prompt to Gemini Vision API
+      // Educational Note: Multimodal AI accepts both text and images in a single request
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: base64Image
+          }
+        }
+      ]);
+
+      const response = await result.response;
+      const analysisText = response.text();
+
+      // Update state with results
+      setSkinAnalysisResult(analysisText);
+      setIsAnalyzing(false);
+
+      console.log('✅ AI Vision Analysis completed successfully!');
+    } catch (err) {
+      console.error('Error analyzing with Gemini Vision:', err);
+      setError(`Failed to analyze appearance: ${err.message || 'Please check your API key and try again'}`);
+      setSkinAnalysisResult('');
+      setIsAnalyzing(false);
+    }
+  };
+
+  /**
+   * Face Detection Loop (Separate from Video Rendering)
+   *
+   * This runs independently at 30fps for smooth real-time tracking.
+   * Educational Note: Separating ML inference from rendering prevents frame drops.
+   * The video renders at 60fps while face detection runs at 30fps.
+   *
+   * Uses a ref-based flag to check if loop should continue, avoiding stale closures.
+   */
+  const faceDetectionLoop = async () => {
+    // Check running flag first - this allows proper stopping
+    if (!faceDetectionRunningRef.current) {
+      return;
+    }
+
+    if (!videoRef.current || !faceDetectionEnabled || !isWebcamActive) {
+      // Schedule next detection check
+      faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 33);
+      return;
+    }
+
+    const video = videoRef.current;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      try {
+        // Detect faces with landmarks
+        const detections = await detectFaces();
+
+        // Update both state and ref with new detections
+        // Ref ensures render loop always has latest data without re-rendering
+        const newDetections = detections || [];
+        faceDetectionsRef.current = newDetections;
+        setFaceDetections(newDetections);
+      } catch (err) {
+        console.error('Face detection error:', err);
+      }
+    }
+
+    // Schedule next detection (30fps = 33ms interval for smoother tracking)
+    // Only if still running
+    if (faceDetectionRunningRef.current) {
+      faceDetectionIntervalRef.current = setTimeout(faceDetectionLoop, 33);
+    }
+  };
+
+  /**
+   * Video Rendering Loop (60fps)
+   *
+   * Runs at maximum speed for smooth video display.
+   * No longer performs async face detection - just draws from stored state.
+   * Educational Note: This demonstrates the importance of separating heavy
+   * computational tasks from rendering for optimal performance.
    */
   const renderFrame = () => {
-    // Only render if we have valid refs and webcam is active
+    // Check if rendering should continue
+    if (!renderingActiveRef.current) {
+      return;
+    }
+
     if (videoRef.current && canvasRef.current && isWebcamActive) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-      // HAVE_ENOUGH_DATA means video has loaded enough to start playing
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Resize canvas to match video dimensions (only when needed)
+        // Set canvas dimensions to match video only if they've changed
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
         }
 
-        // Clear the previous frame
+        // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Save the current canvas state before transformations
+        // Apply transformations and filter - keep everything in one context
         ctx.save();
-        
-        // Mirror the video horizontally for a more natural "selfie" view
-        // scale(-1, 1) flips horizontally, then we translate to reposition
         ctx.scale(-1, 1);
         ctx.translate(-canvas.width, 0);
 
-        // Apply the selected filter to the canvas context
+        // Draw video with filter
         applyFilter(ctx, selectedFilter);
-        
-        // Draw the current video frame onto the canvas
-        // The filter is automatically applied because we set ctx.filter
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Restore the canvas to its previous state (removes transformations)
+        // Reset filter for overlays but keep same transform context
+        ctx.filter = 'none';
+
+        // Draw all face analysis features from ref (always has latest data)
+        // Face detection runs in separate loop at 30fps
+        const currentDetections = faceDetectionsRef.current;
+        if (faceDetectionEnabled && currentDetections.length > 0) {
+          // Draw bounding boxes with confidence
+          drawBoundingBoxes(ctx, currentDetections);
+
+          // Draw facial landmarks (color-coded groups for education)
+          drawLandmarks(ctx, currentDetections);
+
+          // Draw expression recognition results
+          drawExpressions(ctx, currentDetections);
+
+          // Draw face matching similarity
+          drawFaceMatching(ctx, currentDetections);
+        }
+
+        // Restore context once at the end
         ctx.restore();
       }
 
-      // Schedule the next frame to be rendered
-      // This creates a smooth 60 FPS animation loop
-      animationFrameRef.current = requestAnimationFrame(renderFrame);
+      // Only schedule next frame if still active
+      if (renderingActiveRef.current) {
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+      }
     }
   };
 
-  /**
-   * useEffect hook for managing the rendering loop
-   * 
-   * - Starts rendering when webcam becomes active
-   * - Re-starts when filter settings change
-   * - Cleanup function cancels animation frame when component unmounts
-   * 
-   * Dependencies: isWebcamActive, selectedFilter, beautyMode, filterIntensity
-   * When any of these change, the effect re-runs to restart rendering with new settings
-   * 
-   * Learn more about useEffect:
-   * https://react.dev/reference/react/useEffect
-   */
+  // Load face-api models on mount
   useEffect(() => {
+    loadFaceApiModels();
+    // Load API key from environment variable
+    // Educational Note: REACT_APP_GEMINI_API_KEY is loaded from .env file for secure API key management
+    // In Create React App, custom env vars MUST start with REACT_APP_ to be accessible in browser
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY || '';
+    if (apiKey) {
+      setGeminiKey(apiKey);
+      console.log('✅ Gemini API key loaded successfully from .env');
+    } else {
+      console.warn('⚠️ REACT_APP_GEMINI_API_KEY not found in .env file. AI features will be disabled.');
+      console.log('📚 Tutorial: Add your Gemini API key to .env file (see .env.example)');
+    }
+  }, []);
+
+  // Effect to control video rendering loop
+  useEffect(() => {
+    // Stop any existing render loop first
+    renderingActiveRef.current = false;
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
     if (isWebcamActive) {
+      // Start render loop with fresh closure
+      renderingActiveRef.current = true;
       renderFrame();
     }
 
-    // Cleanup function - runs when component unmounts or dependencies change
     return () => {
+      // Cleanup: stop render loop
+      renderingActiveRef.current = false;
       if (animationFrameRef.current) {
-        // Cancel pending animation frame to prevent memory leaks
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity]);
+  }, [isWebcamActive, selectedFilter, beautyMode, filterIntensity, landmarkColorMode, showBoundingBox, showExpressions, showFaceMatching]);
 
-  /**
-   * Starts the webcam and begins video streaming
-   * 
-   * This async function:
-   * 1. Requests camera access using getUserMedia API
-   * 2. Attaches the stream to the video element
-   * 3. Waits for video metadata to load
-   * 4. Starts video playback
-   * 5. Updates state to trigger rendering
-   * 
-   * Error handling catches and displays permission denials or other camera issues
-   * 
-   * Learn more about getUserMedia:
-   * https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-   */
+  // Effect to control face detection loop (separate from rendering)
+  useEffect(() => {
+    // Stop any existing loop first
+    faceDetectionRunningRef.current = false;
+    if (faceDetectionIntervalRef.current) {
+      clearTimeout(faceDetectionIntervalRef.current);
+      faceDetectionIntervalRef.current = null;
+    }
+
+    if (isWebcamActive && faceDetectionEnabled) {
+      // Start face detection loop with fresh closure
+      faceDetectionRunningRef.current = true;
+      faceDetectionLoop();
+    } else {
+      // Clear detections when disabled
+      setFaceDetections([]);
+    }
+
+    return () => {
+      // Cleanup: stop face detection loop
+      faceDetectionRunningRef.current = false;
+      if (faceDetectionIntervalRef.current) {
+        clearTimeout(faceDetectionIntervalRef.current);
+        faceDetectionIntervalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWebcamActive, faceDetectionEnabled, showBoundingBox, showExpressions, landmarkColorMode, showFaceMatching]);
+
   const startWebcam = async () => {
     try {
-      // Clear any previous errors
       setError(null);
-      
-      // Request camera access from the browser
-      // This will prompt the user for permission on first use
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 }, // Request HD resolution
-        audio: false // We don't need audio
+        video: { width: 1280, height: 720 },
+        audio: false
       });
 
-      // Store the stream in a ref so we can stop it later
       streamRef.current = stream;
 
       if (videoRef.current) {
-        // Attach the media stream to the video element
         videoRef.current.srcObject = stream;
 
-        // Wait for video metadata to load before playing
-        // This ensures video dimensions are available
+        // Wait for video to be ready
         await new Promise((resolve) => {
           videoRef.current.onloadedmetadata = () => {
             videoRef.current.play();
@@ -399,61 +994,32 @@ function App() {
           };
         });
 
-        // Update state to start the rendering loop
         setIsWebcamActive(true);
       }
     } catch (err) {
-      // Handle errors (permission denied, no camera, etc.)
       console.error('Error accessing webcam:', err);
       setError('Unable to access webcam. Please ensure you have granted camera permissions.');
       setIsWebcamActive(false);
     }
   };
 
-  /**
-   * Stops the webcam and cleans up all resources
-   * 
-   * This function properly releases the camera by:
-   * 1. Canceling the animation frame loop
-   * 2. Stopping all media tracks (releases camera hardware)
-   * 3. Removing the stream from the video element
-   * 4. Resetting state
-   * 
-   * Important: Always stop tracks when done to free up the camera!
-   */
   const stopWebcam = () => {
-    // Cancel any pending animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
 
     if (streamRef.current) {
-      // Get all tracks (video and audio, though we only have video)
       const tracks = streamRef.current.getTracks();
-      
-      // Stop each track to release the camera
-      // This turns off the camera light and frees the hardware
       tracks.forEach(track => track.stop());
-      
-      // Remove the stream from the video element
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      
-      // Clear the stream reference
       streamRef.current = null;
-      
-      // Update state
       setIsWebcamActive(false);
       setSelectedFilter('none');
     }
   };
 
-  /**
-   * Smoothly scrolls to the app section
-   * 
-   * Uses the Scroll API with smooth behavior for a nice user experience
-   */
   const scrollToApp = () => {
     appSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -743,44 +1309,112 @@ function App() {
             <p className="section-subtitle">Start your webcam and experience the magic</p>
           </div>
 
-          <div className="video-wrapper">
-            <div className="video-container">
-              {!isWebcamActive && (
-                <div className="placeholder">
-                  <div className="placeholder-content">
-                    <svg className="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <div className="app-layout">
+            {/* Left Side - Camera */}
+            <div className="camera-section">
+              <div className="video-container">
+                {!isWebcamActive && (
+                  <div className="placeholder">
+                    <div className="placeholder-content">
+                      <svg className="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <p>Click the button below to start your webcam</p>
+                    </div>
+                  </div>
+                )}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="webcam hidden"
+                />
+                <canvas
+                  ref={canvasRef}
+                  className={`webcam-canvas ${!isWebcamActive ? 'hidden' : ''}`}
+                />
+
+                {/* Sticker Overlay Layer */}
+                {isWebcamActive && (
+                  <div
+                    className="sticker-overlay"
+                    onMouseMove={handleStickerDragMove}
+                    onMouseUp={handleStickerDragEnd}
+                    onTouchMove={handleStickerDragMove}
+                    onTouchEnd={handleStickerDragEnd}
+                  >
+                    {placedStickers.map((sticker) => (
+                      <div
+                        key={sticker.id}
+                        className="placed-sticker"
+                        style={{
+                          left: `${sticker.x}%`,
+                          top: `${sticker.y}%`,
+                          fontSize: `${sticker.size}px`,
+                          transform: `translate(-50%, -50%) rotate(${sticker.rotation}deg) scaleX(-1)`,
+                          cursor: draggingSticker === sticker.id ? 'grabbing' : 'grab',
+                        }}
+                      >
+                        <span
+                          className="sticker-emoji"
+                          onMouseDown={(e) => handleStickerDragStart(e, sticker)}
+                          onTouchStart={(e) => handleStickerDragStart(e, sticker)}
+                        >
+                          {sticker.icon}
+                        </span>
+                        <button
+                          className="sticker-delete"
+                          onClick={() => removeSticker(sticker.id)}
+                          title="Remove sticker"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {showCaptureFlash && <div className="capture-flash" />}
+
+                {isWebcamActive && (
+                  <button className="capture-button" onClick={capturePhoto} title="Capture Photo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p>Click the button below to start your webcam</p>
+                  </button>
+                )}
+              </div>
+
+              {/* Filters below camera */}
+              {isWebcamActive && (
+                <div className="filters-container">
+                  <div className="filters-scroll">
+                    {filters.map((filter) => (
+                      <button
+                        key={filter.id}
+                        className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
+                        onClick={() => {
+                          // Toggle: if already selected, deselect (set to 'none')
+                          setSelectedFilter(selectedFilter === filter.id ? 'none' : filter.id);
+                        }}
+                      >
+                        <span className="filter-icon">{filter.icon}</span>
+                        <span className="filter-name">{filter.name}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="webcam hidden"
-              />
-              <canvas
-                ref={canvasRef}
-                className={`webcam-canvas ${!isWebcamActive ? 'hidden' : ''}`}
-              />
-              {showCaptureFlash && <div className="capture-flash" />}
-
-              {isWebcamActive && (
-                <button className="capture-button" onClick={capturePhoto} title="Capture Photo">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-              )}
             </div>
 
+            {/* Right Side - Controls */}
             {isWebcamActive && (
-              <>
-                <div className="advanced-controls">
+              <div className="controls-sidebar">
+                {/* Basic Controls */}
+                <div className="control-panel">
+                  <h3 className="panel-title">Basic Controls</h3>
                   <div className="control-group">
                     <label className="control-label">
                       <input
@@ -808,21 +1442,217 @@ function App() {
                   </div>
                 </div>
 
-                <div className="filters-container">
-                  <div className="filters-scroll">
-                    {filters.map((filter) => (
-                      <button
-                        key={filter.id}
-                        className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
-                        onClick={() => setSelectedFilter(filter.id)}
-                      >
-                        <span className="filter-icon">{filter.icon}</span>
-                        <span className="filter-name">{filter.name}</span>
-                      </button>
-                    ))}
+                {/* Face Analysis Panel */}
+                <div className="control-panel">
+                  <h3 className="panel-title">🤖 Face Analysis</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
+                    AI-powered face detection and recognition
+                  </p>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <input
+                        type="checkbox"
+                        checked={faceDetectionEnabled}
+                        onChange={(e) => setFaceDetectionEnabled(e.target.checked)}
+                        className="toggle-checkbox"
+                      />
+                      <span className="toggle-label">Enable Face Detection {faceDetectionEnabled ? '✓' : ''}</span>
+                    </label>
+                  </div>
+
+                  {faceDetectionEnabled && (
+                    <>
+                      <div className="control-group">
+                        <label className="control-label">
+                          <input
+                            type="checkbox"
+                            checked={showBoundingBox}
+                            onChange={(e) => setShowBoundingBox(e.target.checked)}
+                            className="toggle-checkbox"
+                          />
+                          <span className="toggle-label">📦 Bounding Box & Confidence</span>
+                        </label>
+                      </div>
+
+                      <div className="control-group">
+                        <label className="control-label">
+                          <input
+                            type="checkbox"
+                            checked={showExpressions}
+                            onChange={(e) => setShowExpressions(e.target.checked)}
+                            className="toggle-checkbox"
+                          />
+                          <span className="toggle-label">😊 Expression Recognition</span>
+                        </label>
+                      </div>
+
+                      <div className="control-group">
+                        <label className="control-label">
+                          <span className="slider-label">👁️ Landmarks:</span>
+                          <select
+                            value={landmarkColorMode}
+                            onChange={(e) => setLandmarkColorMode(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px',
+                              marginTop: '8px',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(168, 85, 247, 0.3)',
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              color: 'white',
+                            }}
+                          >
+                            <option value="none">Hide Landmarks</option>
+                            <option value="all">Show All (Green)</option>
+                            <option value="groups">Color Groups (Educational)</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="control-group" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                        <label style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', marginBottom: '10px', display: 'block' }}>
+                          🎯 Face Recognition
+                        </label>
+                        {!referenceDescriptor ? (
+                          <button
+                            className="ai-button"
+                            onClick={captureReferenceFace}
+                            style={{ width: '100%' }}
+                          >
+                            📸 Capture Reference Face
+                          </button>
+                        ) : (
+                          <div>
+                            <p style={{ color: '#00FF00', fontSize: '0.9rem', marginBottom: '10px' }}>
+                              ✓ Reference captured! Matching enabled.
+                            </p>
+                            <button
+                              className="ai-button"
+                              onClick={clearReferenceFace}
+                              style={{ width: '100%', background: 'rgba(255, 0, 0, 0.2)' }}
+                            >
+                              ✕ Clear Reference
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* AI Recommendations */}
+                <div className="control-panel">
+                  <h3 className="panel-title">✨ AI Recommendations</h3>
+                  <div className="control-group">
+                    <button
+                      className="ai-button"
+                      onClick={getAIRecommendation}
+                      disabled={isAiProcessing}
+                    >
+                      {isAiProcessing ? '🤔 Thinking...' : 'Get Filter Suggestion'}
+                    </button>
+                    {aiRecommendation && (
+                      <div className="ai-recommendation">
+                        <p><strong>AI:</strong> {aiRecommendation}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </>
+
+                {/* AI Skin Analysis - Vision API */}
+                <div className="control-panel">
+                  <h3 className="panel-title">🔬 AI Skin Analysis</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
+                    Get personalized filter recommendations based on your appearance
+                  </p>
+                  <div className="control-group">
+                    <button
+                      className="ai-button"
+                      onClick={analyzeWithGeminiVision}
+                      disabled={isAnalyzing || !isWebcamActive}
+                      style={{
+                        width: '100%',
+                        background: isAnalyzing ? 'rgba(168, 85, 247, 0.3)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        cursor: isAnalyzing || !isWebcamActive ? 'not-allowed' : 'pointer',
+                        opacity: isAnalyzing || !isWebcamActive ? 0.6 : 1
+                      }}
+                    >
+                      {isAnalyzing ? '🔍 Analyzing...' : '📸 Analyze My Appearance'}
+                    </button>
+
+                    {!isWebcamActive && (
+                      <p style={{
+                        color: 'rgba(255, 200, 100, 0.9)',
+                        fontSize: '0.85rem',
+                        marginTop: '10px',
+                        fontStyle: 'italic'
+                      }}>
+                        ⚠️ Start webcam first to use this feature
+                      </p>
+                    )}
+
+                    {skinAnalysisResult && (
+                      <div
+                        className="ai-recommendation"
+                        style={{
+                          marginTop: '15px',
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          border: '1px solid rgba(102, 126, 234, 0.3)',
+                          borderRadius: '12px',
+                          padding: '15px',
+                          maxHeight: '300px',
+                          overflowY: 'auto'
+                        }}
+                      >
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                          {skinAnalysisResult}
+                        </div>
+                      </div>
+                    )}
+
+                    {!geminiKey && (
+                      <p style={{
+                        color: 'rgba(255, 100, 100, 0.9)',
+                        fontSize: '0.85rem',
+                        marginTop: '10px',
+                        padding: '10px',
+                        background: 'rgba(255, 0, 0, 0.1)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 0, 0, 0.3)'
+                      }}>
+                        🔑 API Key Required: Add REACT_APP_GEMINI_API_KEY to your .env file (see .env.example)
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Draggable Stickers */}
+                <div className="control-panel stickers-panel">
+                  <h3 className="panel-title">Stickers</h3>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '15px', marginTop: '-10px' }}>
+                    Click to add stickers, then drag to position
+                  </p>
+
+                  {['animals', 'accessories', 'fun', 'expressions', 'seasonal'].map(category => (
+                    <div key={category} className="sticker-category">
+                      <h4 className="category-title">{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                      <div className="stickers-grid">
+                        {stickers.filter(s => s.category === category).map((sticker) => (
+                          <button
+                            key={sticker.id}
+                            className="sticker-button"
+                            onClick={() => addSticker(sticker)}
+                            title={sticker.name}
+                          >
+                            <span className="sticker-icon">{sticker.icon}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
