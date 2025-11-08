@@ -133,7 +133,8 @@ function App() {
   const loadFaceApiModels = async () => {
     try {
       console.log('Loading face-api.js models...');
-      const MODEL_URL = '/models';
+      // Use PUBLIC_URL for GitHub Pages compatibility
+      const MODEL_URL = `${process.env.PUBLIC_URL}/models`;
 
       // Load all models in parallel for faster initialization
       await Promise.all([
