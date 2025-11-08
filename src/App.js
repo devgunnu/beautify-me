@@ -696,7 +696,7 @@ function App() {
   const analyzeWithGeminiVision = async () => {
     // Validate API key exists
     if (!geminiKey) {
-      setError('Please configure your REACT_APP_GEMINI_API_KEY in .env file to use AI features');
+      setError('Please configure your GEMINI_API_KEY in .env file to use AI features');
       return;
     }
 
@@ -906,14 +906,13 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
   useEffect(() => {
     loadFaceApiModels();
     // Load API key from environment variable
-    // Educational Note: REACT_APP_GEMINI_API_KEY is loaded from .env file for secure API key management
-    // In Create React App, custom env vars MUST start with REACT_APP_ to be accessible in browser
-    const apiKey = process.env.REACT_APP_GEMINI_API_KEY || '';
+    // Educational Note: GEMINI_API_KEY is loaded from .env file for secure API key management
+    const apiKey = process.env.GEMINI_API_KEY || '';
     if (apiKey) {
       setGeminiKey(apiKey);
       console.log('✅ Gemini API key loaded successfully from .env');
     } else {
-      console.warn('⚠️ REACT_APP_GEMINI_API_KEY not found in .env file. AI features will be disabled.');
+      console.warn('⚠️ GEMINI_API_KEY not found in .env file. AI features will be disabled.');
       console.log('📚 Tutorial: Add your Gemini API key to .env file (see .env.example)');
     }
   }, []);
@@ -1118,6 +1117,125 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
           <div className="stat-item">
             <div className="stat-number">0 MS</div>
             <div className="stat-label">Zero Latency</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Learning Path Section - NEW */}
+      <section className="learning-path-section">
+        <div className="learning-path-content">
+          <div className="section-header">
+            <h2 className="section-title">Your Learning Journey</h2>
+            <p className="section-subtitle">Master JavaScript through 8 progressive levels - Build real features, learn by doing</p>
+          </div>
+
+          <div className="learning-roadmap">
+            {[
+              {
+                level: 1,
+                icon: '⚛️',
+                title: 'React Basics',
+                desc: 'Components, State, and Event Handling',
+                tech: ['React', 'JSX', 'Hooks'],
+                time: '1-2 hours',
+                difficulty: 'Beginner'
+              },
+              {
+                level: 2,
+                icon: '📹',
+                title: 'Webcam & Canvas',
+                desc: 'Real-time Video Processing',
+                tech: ['WebRTC', 'Canvas API', 'useRef'],
+                time: '2-3 hours',
+                difficulty: 'Beginner'
+              },
+              {
+                level: 3,
+                icon: '🎨',
+                title: 'Filters & Effects',
+                desc: 'CSS Filters and Transformations',
+                tech: ['CSS Filters', 'Canvas Transform'],
+                time: '1-2 hours',
+                difficulty: 'Intermediate'
+              },
+              {
+                level: 4,
+                icon: '📸',
+                title: 'Photo Capture',
+                desc: 'Capture and Download Images',
+                tech: ['Canvas API', 'Blob API', 'File Download'],
+                time: '1-2 hours',
+                difficulty: 'Intermediate'
+              },
+              {
+                level: 5,
+                icon: '✨',
+                title: 'Stickers & Drag',
+                desc: 'Interactive Draggable Elements',
+                tech: ['Drag & Drop', 'Coordinates', 'State Management'],
+                time: '2-3 hours',
+                difficulty: 'Intermediate'
+              },
+              {
+                level: 6,
+                icon: '🤖',
+                title: 'AI Integration',
+                desc: 'Gemini API for Recommendations',
+                tech: ['Gemini API', 'Async/Await', 'Environment Variables'],
+                time: '2-3 hours',
+                difficulty: 'Advanced'
+              },
+              {
+                level: 7,
+                icon: '👁️',
+                title: 'AI Vision',
+                desc: 'Image Analysis with Multimodal AI',
+                tech: ['Gemini Vision', 'Base64 Encoding', 'Multimodal AI'],
+                time: '2-3 hours',
+                difficulty: 'Advanced'
+              },
+              {
+                level: 8,
+                icon: '🧠',
+                title: 'Face Detection',
+                desc: 'ML-Powered Face Analysis',
+                tech: ['TensorFlow.js', 'Face-API', 'Machine Learning'],
+                time: '3-4 hours',
+                difficulty: 'Advanced'
+              }
+            ].map((level) => (
+              <div key={level.level} className={`level-card difficulty-${level.difficulty.toLowerCase()}`}>
+                <div className="level-number">{level.level}</div>
+                <div className="level-icon">{level.icon}</div>
+                <h3 className="level-title">{level.title}</h3>
+                <p className="level-desc">{level.desc}</p>
+
+                <div className="tech-badges">
+                  {level.tech.map((tech, idx) => (
+                    <span key={idx} className="tech-badge">{tech}</span>
+                  ))}
+                </div>
+
+                <div className="level-meta">
+                  <span className="level-time">⏱️ {level.time}</span>
+                  <span className={`level-difficulty ${level.difficulty.toLowerCase()}`}>
+                    {level.difficulty}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="learning-cta">
+            <button className="start-learning-button" onClick={() => window.open('https://github.com/devgunnu/beautify-me#-your-learning-journey', '_blank')}>
+              <span>Start Your Journey</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <p className="learning-note">
+              Fork the repo, work through levels, merge to main. Learn by building! 🚀
+            </p>
           </div>
         </div>
       </section>
@@ -1621,7 +1739,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
                         borderRadius: '8px',
                         border: '1px solid rgba(255, 0, 0, 0.3)'
                       }}>
-                        🔑 API Key Required: Add REACT_APP_GEMINI_API_KEY to your .env file (see .env.example)
+                        🔑 API Key Required: Add GEMINI_API_KEY to your .env file (see .env.example)
                       </p>
                     )}
                   </div>
