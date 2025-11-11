@@ -1,13 +1,13 @@
 {
-  "name": "beautify-me",
+  "name": "learnlens",
   "version": "0.1.0",
-  "homepage": "https://devgunnu.github.io/beautify-me",
+  "homepage": "https://devgunnu.github.io/LearnLens",
   "description": "A real-time webcam filter application built with React that transforms your appearance with stunning filters",
   "author": "devgunnu",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/devgunnu/beautify-me"
+    "url": "https://github.com/devgunnu/LearnLens"
   },
   "keywords": [
     "react",

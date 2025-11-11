@@ -17,7 +17,7 @@ By the end of this level, you will be able to:
 
 ## 🎓 What You'll Build
 
-In this level, you'll build the **foundation of the Beautify Me application**:
+In this level, you'll build the **foundation of the LearnLens application**:
 
 - A basic React component structure
 - Interactive UI with buttons and controls
@@ -334,7 +334,7 @@ return (
   <div className="App">
     {/* Header section */}
     <header className="App-header">
-      <h1>Beautify Me 🎨</h1>
+      <h1>LearnLens 🎨</h1>
     </header>
 
     {/* Mode selector buttons */}

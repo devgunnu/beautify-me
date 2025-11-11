@@ -301,8 +301,8 @@ console.log(formatTimestamp(photo.timestamp));
 
 **Filename with timestamp:**
 ```javascript
-const filename = `beautify-me-${Date.now()}.png`;
-// Result: "beautify-me-1705345678901.png"
+const filename = `learnlens-${Date.now()}.png`;
+// Result: "learnlens-1705345678901.png"
 ```
 
 ## 💻 Implementation Guide
@@ -388,7 +388,7 @@ const downloadPhoto = (photo) => {
   const link = document.createElement('a');
 
   // TODO: Set filename with timestamp
-  const filename = `beautify-me-${photo.id}.png`;
+  const filename = `learnlens-${photo.id}.png`;
   link.download = filename;
 
   // TODO: Set image data

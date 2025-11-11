@@ -1,10 +1,10 @@
-# Contributing to Beautify Me 🎓
+# Contributing to LearnLens 🎓
 
-Thank you for your interest in contributing to Beautify Me! This project is designed as a **progressive learning tutorial** for JavaScript, and we welcome contributions from learners, educators, and developers alike.
+Thank you for your interest in contributing to LearnLens! This project is designed as a **progressive learning tutorial** for JavaScript, and we welcome contributions from learners, educators, and developers alike.
 
 ## 🎯 Project Mission
 
-Beautify Me is an **educational platform** that teaches JavaScript through building a real webcam filter application. Our goal is to help learners master JavaScript concepts from React basics to machine learning in the browser.
+LearnLens is an **educational platform** that teaches JavaScript through building a real webcam filter application. Our goal is to help learners master JavaScript concepts from React basics to machine learning in the browser.
 
 ## 🌟 Ways to Contribute
 
@@ -186,8 +186,8 @@ Natural progression after learning image capture and manipulation.
 1. **Fork and clone**
    ```bash
    # Fork on GitHub, then:
-   git clone https://github.com/YOUR-USERNAME/beautify-me.git
-   cd beautify-me
+   git clone https://github.com/YOUR-USERNAME/LearnLens.git
+   cd LearnLens
    ```
 
 2. **Install dependencies**
