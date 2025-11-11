@@ -633,7 +633,7 @@ function App() {
   const downloadPhoto = () => {
     if (capturedPhoto) {
       const link = document.createElement('a');
-      link.download = `beautify-me-${Date.now()}.png`;
+      link.download = `learnlens-${Date.now()}.png`;
       link.href = capturedPhoto;
       link.click();
     }
@@ -1035,7 +1035,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
           </div>
 
           <h1 className="hero-title">
-            Beautify Me
+            LearnLens
           </h1>
 
           <p className="hero-subtitle">
@@ -1228,7 +1228,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
           </div>
 
           <div className="learning-cta">
-            <button className="start-learning-button" onClick={() => window.open('https://github.com/devgunnu/beautify-me#-your-learning-journey', '_blank')}>
+            <button className="start-learning-button" onClick={() => window.open('https://github.com/devgunnu/LearnLens#-your-learning-journey', '_blank')}>
               <span>Start Your Journey</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -1398,7 +1398,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
             </div>
             <div className="faq-item">
               <h3>Which browsers are supported?</h3>
-              <p>Beautify Me works on all modern browsers including Chrome, Firefox, Safari, and Edge.</p>
+              <p>LearnLens works on all modern browsers including Chrome, Firefox, Safari, and Edge.</p>
             </div>
             <div className="faq-item">
               <h3>Do I need to install anything?</h3>
@@ -1406,7 +1406,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
             </div>
             <div className="faq-item">
               <h3>Can I use this on mobile?</h3>
-              <p>Yes! Beautify Me is fully responsive and works great on smartphones and tablets.</p>
+              <p>Yes! LearnLens is fully responsive and works great on smartphones and tablets.</p>
             </div>
             <div className="faq-item">
               <h3>Are the filters free to use?</h3>
@@ -1824,7 +1824,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-section">
-            <h3 className="footer-brand">Beautify Me</h3>
+            <h3 className="footer-brand">LearnLens</h3>
             <p className="footer-tagline">Transform your look with real-time filters</p>
           </div>
 
@@ -1871,7 +1871,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; 2025 Beautify Me. Made with passion for creativity. All rights reserved.</p>
+          <p>&copy; 2025 LearnLens. Made with passion for creativity. All rights reserved.</p>
         </div>
       </footer>
     </div>
