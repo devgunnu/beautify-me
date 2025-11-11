@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import './App.css';
 import * as faceapi from '@vladmandic/face-api';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import LandingPage from './LandingPage';
 
 function App() {
   const videoRef = useRef(null);
@@ -599,26 +600,21 @@ function App() {
 
       // Draw placed stickers on top
       if (placedStickers.length > 0) {
-        // Apply mirror transformation to match live view
-        ctx.save();
-        ctx.scale(-1, 1);
-        ctx.translate(-compositeCanvas.width, 0);
-
         placedStickers.forEach((sticker) => {
-          const x = (sticker.x / 100) * compositeCanvas.width;
+          // Mirror the x-coordinate to match the flipped live view
+          const x = compositeCanvas.width - (sticker.x / 100) * compositeCanvas.width;
           const y = (sticker.y / 100) * compositeCanvas.height;
 
           ctx.save();
           ctx.translate(x, y);
-          ctx.rotate((sticker.rotation * Math.PI) / 180);
+          // Flip rotation for mirrored canvas
+          ctx.rotate((-sticker.rotation * Math.PI) / 180);
           ctx.font = `${sticker.size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(sticker.icon, 0, 0);
           ctx.restore();
         });
-
-        ctx.restore();
       }
 
       // Create image from composite canvas
@@ -1020,412 +1016,40 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
     }
   };
 
-  const scrollToApp = () => {
+  const scrollToApp = (filterId) => {
     appSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // If a filter ID is provided, select it after scrolling
+    if (filterId && filterId !== null) {
+      setTimeout(() => {
+        setSelectedFilter(filterId);
+        // Start webcam if not already active
+        if (!isWebcamActive) {
+          startWebcam();
+        }
+      }, 500);
+    }
+  };
+
+  const handleLaunchApp = (filterId) => {
+    scrollToApp(filterId);
   };
 
   return (
     <div className="App">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-content">
-          <div className="hero-badge">
-            <span className="badge-icon">✨</span>
-            <span>Real-time AI Filters</span>
-          </div>
-
-          <h1 className="hero-title">
-            Beautify Me
-          </h1>
-
-          <p className="hero-subtitle">
-            Transform your appearance with stunning real-time filters.
-            <br />
-            Express yourself like never before.
-          </p>
-
-          <div className="hero-buttons">
-            <button className="cta-button primary" onClick={scrollToApp}>
-              <span>Try It Now</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </button>
-            <button className="cta-button secondary" onClick={scrollToApp}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Watch Demo</span>
-            </button>
-          </div>
-
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3>Real-Time Processing</h3>
-              <p>Instant filter application with zero lag</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                </svg>
-              </div>
-              <h3>Creative Filters</h3>
-              <p>Wide variety of stunning effects</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3>Privacy First</h3>
-              <p>Everything runs locally in your browser</p>
-            </div>
-          </div>
-
-          <div className="scroll-indicator">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </div>
-        </div>
-      </section>
-
-      {/* Statistics Section */}
-      <section className="stats-section">
-        <div className="stats-container">
-          <div className="stat-item">
-            <div className="stat-number">20+</div>
-            <div className="stat-label">Creative Filters</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">60 FPS</div>
-            <div className="stat-label">Real-Time Processing</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">100%</div>
-            <div className="stat-label">Private & Secure</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">0 MS</div>
-            <div className="stat-label">Zero Latency</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Learning Path Section - NEW */}
-      <section className="learning-path-section">
-        <div className="learning-path-content">
-          <div className="section-header">
-            <h2 className="section-title">Your Learning Journey</h2>
-            <p className="section-subtitle">Master JavaScript through 8 progressive levels - Build real features, learn by doing</p>
-          </div>
-
-          <div className="learning-roadmap">
-            {[
-              {
-                level: 1,
-                icon: '⚛️',
-                title: 'React Basics',
-                desc: 'Components, State, and Event Handling',
-                tech: ['React', 'JSX', 'Hooks'],
-                time: '1-2 hours',
-                difficulty: 'Beginner'
-              },
-              {
-                level: 2,
-                icon: '📹',
-                title: 'Webcam & Canvas',
-                desc: 'Real-time Video Processing',
-                tech: ['WebRTC', 'Canvas API', 'useRef'],
-                time: '2-3 hours',
-                difficulty: 'Beginner'
-              },
-              {
-                level: 3,
-                icon: '🎨',
-                title: 'Filters & Effects',
-                desc: 'CSS Filters and Transformations',
-                tech: ['CSS Filters', 'Canvas Transform'],
-                time: '1-2 hours',
-                difficulty: 'Intermediate'
-              },
-              {
-                level: 4,
-                icon: '📸',
-                title: 'Photo Capture',
-                desc: 'Capture and Download Images',
-                tech: ['Canvas API', 'Blob API', 'File Download'],
-                time: '1-2 hours',
-                difficulty: 'Intermediate'
-              },
-              {
-                level: 5,
-                icon: '✨',
-                title: 'Stickers & Drag',
-                desc: 'Interactive Draggable Elements',
-                tech: ['Drag & Drop', 'Coordinates', 'State Management'],
-                time: '2-3 hours',
-                difficulty: 'Intermediate'
-              },
-              {
-                level: 6,
-                icon: '🤖',
-                title: 'AI Integration',
-                desc: 'Gemini API for Recommendations',
-                tech: ['Gemini API', 'Async/Await', 'Environment Variables'],
-                time: '2-3 hours',
-                difficulty: 'Advanced'
-              },
-              {
-                level: 7,
-                icon: '👁️',
-                title: 'AI Vision',
-                desc: 'Image Analysis with Multimodal AI',
-                tech: ['Gemini Vision', 'Base64 Encoding', 'Multimodal AI'],
-                time: '2-3 hours',
-                difficulty: 'Advanced'
-              },
-              {
-                level: 8,
-                icon: '🧠',
-                title: 'Face Detection',
-                desc: 'ML-Powered Face Analysis',
-                tech: ['TensorFlow.js', 'Face-API', 'Machine Learning'],
-                time: '3-4 hours',
-                difficulty: 'Advanced'
-              }
-            ].map((level) => (
-              <div key={level.level} className={`level-card difficulty-${level.difficulty.toLowerCase()}`}>
-                <div className="level-number">{level.level}</div>
-                <div className="level-icon">{level.icon}</div>
-                <h3 className="level-title">{level.title}</h3>
-                <p className="level-desc">{level.desc}</p>
-
-                <div className="tech-badges">
-                  {level.tech.map((tech, idx) => (
-                    <span key={idx} className="tech-badge">{tech}</span>
-                  ))}
-                </div>
-
-                <div className="level-meta">
-                  <span className="level-time">⏱️ {level.time}</span>
-                  <span className={`level-difficulty ${level.difficulty.toLowerCase()}`}>
-                    {level.difficulty}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="learning-cta">
-            <button className="start-learning-button" onClick={() => window.open('https://github.com/devgunnu/beautify-me#-your-learning-journey', '_blank')}>
-              <span>Start Your Journey</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </button>
-            <p className="learning-note">
-              Fork the repo, work through levels, merge to main. Learn by building! 🚀
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Filter Showcase Section */}
-      <section className="showcase-section">
-        <div className="showcase-content">
-          <div className="section-header">
-            <h2 className="section-title">Stunning Filter Collection</h2>
-            <p className="section-subtitle">Experience the magic of real-time transformation</p>
-          </div>
-
-          <div className="filter-showcase-grid">
-            <div className="showcase-card">
-              <div className="showcase-icon">🌈</div>
-              <h3>Vibrant</h3>
-              <p>Boost colors and saturation</p>
-            </div>
-            <div className="showcase-card">
-              <div className="showcase-icon">📷</div>
-              <h3>Vintage</h3>
-              <p>Classic retro camera look</p>
-            </div>
-            <div className="showcase-card">
-              <div className="showcase-icon">❄️</div>
-              <h3>Cool</h3>
-              <p>Blue and cool tones</p>
-            </div>
-            <div className="showcase-card">
-              <div className="showcase-icon">🔥</div>
-              <h3>Warm</h3>
-              <p>Orange and warm hues</p>
-            </div>
-            <div className="showcase-card">
-              <div className="showcase-icon">🎭</div>
-              <h3>Dramatic</h3>
-              <p>High contrast effects</p>
-            </div>
-            <div className="showcase-card">
-              <div className="showcase-icon">⚫</div>
-              <h3>Grayscale</h3>
-              <p>Classic black and white</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="how-it-works-section">
-        <div className="how-it-works-content">
-          <div className="section-header">
-            <h2 className="section-title">How It Works</h2>
-            <p className="section-subtitle">Get started in three simple steps</p>
-          </div>
-
-          <div className="steps-grid">
-            <div className="step-card">
-              <div className="step-number">1</div>
-              <div className="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3>Enable Camera</h3>
-              <p>Click the start button to activate your webcam. We'll ask for permission just once.</p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">2</div>
-              <div className="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                </svg>
-              </div>
-              <h3>Choose Your Filter</h3>
-              <p>Scroll through our collection of filters and tap to apply them instantly.</p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">3</div>
-              <div className="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3>Capture & Share</h3>
-              <p>Take photos with filters applied and download them to share with friends.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Enhanced Features Section */}
-      <section className="enhanced-features-section">
-        <div className="enhanced-features-content">
-          <div className="section-header">
-            <h2 className="section-title">Powerful Features</h2>
-            <p className="section-subtitle">Everything you need for the perfect shot</p>
-          </div>
-
-          <div className="enhanced-features-grid">
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">⚡</div>
-              <h3>Lightning Fast</h3>
-              <p>Real-time processing at 60 FPS with zero lag or delay</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">🎨</div>
-              <h3>20+ Filters</h3>
-              <p>Wide variety of creative filters from vintage to modern</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">🔒</div>
-              <h3>100% Private</h3>
-              <p>All processing happens locally in your browser</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">📸</div>
-              <h3>Capture Photos</h3>
-              <p>Take high-quality photos with filters applied</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">💾</div>
-              <h3>Download Instantly</h3>
-              <p>Save your filtered photos in HD quality</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">🌐</div>
-              <h3>No Registration</h3>
-              <p>Start using immediately without signing up</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">📱</div>
-              <h3>Cross-Platform</h3>
-              <p>Works on desktop, tablet, and mobile devices</p>
-            </div>
-            <div className="enhanced-feature-card">
-              <div className="enhanced-feature-icon">✨</div>
-              <h3>Beauty Mode</h3>
-              <p>Professional-grade skin smoothing and enhancement</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="faq-section">
-        <div className="faq-content">
-          <div className="section-header">
-            <h2 className="section-title">Frequently Asked Questions</h2>
-            <p className="section-subtitle">Everything you need to know</p>
-          </div>
-
-          <div className="faq-grid">
-            <div className="faq-item">
-              <h3>Is my video data stored anywhere?</h3>
-              <p>No! All video processing happens locally in your browser. We never store, upload, or access your camera feed.</p>
-            </div>
-            <div className="faq-item">
-              <h3>Which browsers are supported?</h3>
-              <p>Beautify Me works on all modern browsers including Chrome, Firefox, Safari, and Edge.</p>
-            </div>
-            <div className="faq-item">
-              <h3>Do I need to install anything?</h3>
-              <p>Not at all! It's a web application that works directly in your browser. No downloads or installations required.</p>
-            </div>
-            <div className="faq-item">
-              <h3>Can I use this on mobile?</h3>
-              <p>Yes! Beautify Me is fully responsive and works great on smartphones and tablets.</p>
-            </div>
-            <div className="faq-item">
-              <h3>Are the filters free to use?</h3>
-              <p>Absolutely! All filters and features are completely free with no hidden charges or subscriptions.</p>
-            </div>
-            <div className="faq-item">
-              <h3>Can I download my filtered photos?</h3>
-              <p>Yes! You can capture photos with any filter applied and download them instantly in high quality.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* New Modern Landing Page */}
+      <LandingPage onLaunchApp={handleLaunchApp} />
 
       {/* App Section */}
       <section className="app-section" ref={appSectionRef}>
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Try It Out</h2>
-            <p className="section-subtitle">Start your webcam and experience the magic</p>
+            <span className="section-badge">🎨 Interactive Demo</span>
+            <h2 className="section-title">Try the App or Learn to Build It</h2>
+            <p className="section-subtitle">
+              Start your webcam and explore 20+ real-time filters, AI recommendations, and face detection.
+              <br />
+              This is what you'll build through the 8 learning levels!
+            </p>
           </div>
 
           <div className="app-layout">
@@ -1819,61 +1443,6 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <div className="footer-section">
-            <h3 className="footer-brand">Beautify Me</h3>
-            <p className="footer-tagline">Transform your look with real-time filters</p>
-          </div>
-
-          <div className="footer-section">
-            <h4>Quick Links</h4>
-            <ul className="footer-links">
-              <li><a href="#features">Features</a></li>
-              <li><a href="#how-it-works">How It Works</a></li>
-              <li><a href="#faq">FAQ</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-section">
-            <h4>Legal</h4>
-            <ul className="footer-links">
-              <li><a href="#privacy">Privacy Policy</a></li>
-              <li><a href="#terms">Terms of Service</a></li>
-              <li><a href="#contact">Contact Us</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-section">
-            <h4>Connect</h4>
-            <div className="social-links">
-              <a href="#twitter" className="social-icon" aria-label="Twitter">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" />
-                </svg>
-              </a>
-              <a href="#instagram" className="social-icon" aria-label="Instagram">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" fill="none" stroke="currentColor" strokeWidth="2" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </a>
-              <a href="#github" className="social-icon" aria-label="GitHub">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <p>&copy; 2025 Beautify Me. Made with passion for creativity. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

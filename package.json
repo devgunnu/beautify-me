@@ -1,13 +1,13 @@
 {
-  "name": "beautify-me",
+  "name": "learnlens",
   "version": "0.1.0",
-  "homepage": "https://devgunnu.github.io/beautify-me",
-  "description": "A real-time webcam filter application built with React that transforms your appearance with stunning filters",
+  "homepage": "https://devgunnu.github.io/LearnLens",
+  "description": "LearnLens: AI-powered webcam filters with face detection, emotion recognition, and personalized recommendations. Learn to build it yourself with our interactive tutorial.",
   "author": "devgunnu",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/devgunnu/beautify-me"
+    "url": "https://github.com/devgunnu/LearnLens"
   },
   "keywords": [
     "react",
@@ -17,7 +17,14 @@
     "canvas",
     "photo-filters",
     "real-time",
-    "javascript"
+    "javascript",
+    "ai",
+    "machine-learning",
+    "tensorflow",
+    "face-detection",
+    "emotion-recognition",
+    "tutorial",
+    "learning-platform"
   ],
   "private": true,
   "dependencies": {
@@ -29,6 +36,8 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@vladmandic/face-api": "^1.7.14",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-scripts": "5.0.1",
@@ -61,6 +70,9 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "autoprefixer": "^10.4.22",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18"
   }
 }
