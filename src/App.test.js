@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-describe('Beautify Me App', () => {
-  test('renders Beautify Me hero title', () => {
+describe('LearnLens App', () => {
+  test('renders LearnLens hero title', () => {
     render(<App />);
-    const titleElement = screen.getByRole('heading', { name: /Beautify Me/i, level: 1 });
+    const titleElement = screen.getByRole('heading', { name: /LearnLens/i, level: 1 });
     expect(titleElement).toBeInTheDocument();
   });
 

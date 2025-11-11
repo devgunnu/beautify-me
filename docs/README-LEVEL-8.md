@@ -867,7 +867,7 @@ Continue learning:
 
 ---
 
-**Congratulations!** 🎉 You've completed the entire Beautify Me learning journey!
+**Congratulations!** 🎉 You've completed the entire LearnLens learning journey!
 
 Check out the [main README](../README.md) for deployment and sharing options.
 

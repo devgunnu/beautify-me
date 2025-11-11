@@ -1,4 +1,4 @@
-# Beautify Me - Learn JavaScript by Building 🎓
+# LearnLens - Learn JavaScript by Building 🎓
 
 > **Master Modern JavaScript through 8 Progressive Levels**
 > Build a production-ready webcam filter app while learning React, WebRTC, AI APIs, and Machine Learning
@@ -37,8 +37,8 @@ This isn't just another webcam filter app - it's a **comprehensive JavaScript le
 
 ```bash
 # Fork this repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/beautify-me.git
-cd beautify-me
+git clone https://github.com/YOUR_USERNAME/LearnLens.git
+cd LearnLens
 ```
 
 ### **Step 2: Install Dependencies**
@@ -175,7 +175,7 @@ git checkout level-2-webcam
 ## 📂 Project Structure
 
 ```
-beautify-me/
+LearnLens/
 ├── public/
 │   ├── models/              # Pre-trained ML models for face detection
 │   │   ├── tiny_face_detector_model/
@@ -477,7 +477,7 @@ We welcome contributions from learners, educators, and developers!
 
 ### **Community:**
 - [Discord Server](#) - Join our learning community
-- [GitHub Discussions](https://github.com/devgunnu/beautify-me/discussions) - Ask questions
+- [GitHub Discussions](https://github.com/devgunnu/LearnLens/discussions) - Ask questions
 
 ---
 
@@ -571,8 +571,8 @@ If this project helped you learn:
 
 ## 📞 Contact & Support
 
-- **GitHub Issues:** [Report bugs or request features](https://github.com/devgunnu/beautify-me/issues)
-- **Discussions:** [Ask questions or share your project](https://github.com/devgunnu/beautify-me/discussions)
+- **GitHub Issues:** [Report bugs or request features](https://github.com/devgunnu/LearnLens/issues)
+- **Discussions:** [Ask questions or share your project](https://github.com/devgunnu/LearnLens/discussions)
 - **Twitter:** [@devgunnu](https://twitter.com/devgunnu)
 
 ---
