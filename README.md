@@ -1,172 +1,172 @@
-# LearnLens - Learn JavaScript by Building 🎓
+# LearnLens - AI-Powered Webcam Filters 🎨
 
-> **Master Modern JavaScript through 8 Progressive Levels**
-> Build a production-ready webcam filter app while learning React, WebRTC, AI APIs, and Machine Learning
+> **Transform Your Webcam Experience with Artificial Intelligence**
+> 20+ real-time filters • AI recommendations • Face detection • Emotion recognition • 100% private & browser-based
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-19.2.0-blue.svg)
-![Learning Path](https://img.shields.io/badge/Levels-8-purple.svg)
+![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)
+[![Live Demo](https://img.shields.io/badge/demo-live-success.svg)](https://devgunnu.github.io/LearnLens)
 
 ---
 
-## 🎯 What You'll Learn
+## ✨ Why LearnLens?
 
-This isn't just another webcam filter app - it's a **comprehensive JavaScript learning platform** that takes you from React basics to advanced ML integration through hands-on building.
+**LearnLens** is a cutting-edge webcam filter application powered by AI and machine learning. Apply stunning real-time filters, get personalized recommendations, and explore advanced face detection - all in your browser with zero installation required.
 
-### 📚 **Complete Learning Path:**
+### 🎯 Key Features
 
-| Level | Topic | Technologies | Difficulty | Time |
-|-------|-------|-------------|------------|------|
-| 1️⃣ | [React Basics](./docs/README-LEVEL-1.md) | React, JSX, Hooks | 🟢 Beginner | 1-2 hours |
-| 2️⃣ | [Webcam & Canvas](./docs/README-LEVEL-2.md) | WebRTC, Canvas API, useRef | 🟢 Beginner | 2-3 hours |
-| 3️⃣ | [Filters & Effects](./docs/README-LEVEL-3.md) | CSS Filters, Transformations | 🟡 Intermediate | 1-2 hours |
-| 4️⃣ | [Photo Capture](./docs/README-LEVEL-4.md) | Canvas toDataURL, File Download | 🟡 Intermediate | 1-2 hours |
-| 5️⃣ | [Stickers & Drag](./docs/README-LEVEL-5.md) | Drag & Drop API, Coordinates | 🟡 Intermediate | 2-3 hours |
-| 6️⃣ | [AI Integration](./docs/README-LEVEL-6.md) | Gemini API, Async/Await, Env Vars | 🔴 Advanced | 2-3 hours |
-| 7️⃣ | [AI Vision](./docs/README-LEVEL-7.md) | Gemini Vision, Multimodal AI | 🔴 Advanced | 2-3 hours |
-| 8️⃣ | [Face Detection](./docs/README-LEVEL-8.md) | TensorFlow.js, Face-API, ML | 🔴 Advanced | 3-4 hours |
+- **🎨 20+ Stunning Filters** - Vintage, Cyberpunk, Neon, Moonlight, and more
+- **🤖 AI Recommendations** - Powered by Google Gemini API for personalized suggestions
+- **👁️ AI Vision Analysis** - Get smart filter suggestions based on your appearance
+- **🧠 Face Detection** - 68-point facial landmarks using TensorFlow.js
+- **😊 Emotion Recognition** - Detect 7 different emotions in real-time
+- **🦄 Draggable Stickers** - 20+ fun emoji stickers to add personality
+- **📸 Photo Capture** - Download your filtered photos instantly
+- **🔒 100% Private** - All processing happens locally in your browser
+- **⚡ Real-Time Processing** - Smooth 60fps performance
+- **📱 Cross-Platform** - Works on desktop and mobile browsers
+
+---
+
+## 🚀 Try It Now
+
+### [👉 Launch LearnLens App](https://devgunnu.github.io/LearnLens)
+
+No installation, no sign-up, no tracking. Just open and use!
+
+---
+
+## 🎓 Want to Learn How It's Built?
+
+**LearnLens** doubles as an **interactive learning platform**! Follow our comprehensive 8-level tutorial to build the entire application from scratch.
+
+### 📚 Complete Learning Journey:
+
+| Level | Topic | Technologies | Time |
+|-------|-------|-------------|------|
+| 1️⃣ | React Basics | React, JSX, Hooks | 1-2 hours |
+| 2️⃣ | Webcam & Canvas | WebRTC, Canvas API | 2-3 hours |
+| 3️⃣ | Filters & Effects | CSS Filters | 1-2 hours |
+| 4️⃣ | Photo Capture | Canvas API, Blob | 1-2 hours |
+| 5️⃣ | Stickers & Drag | Drag & Drop API | 2-3 hours |
+| 6️⃣ | AI Integration | Gemini API | 2-3 hours |
+| 7️⃣ | AI Vision | Multimodal AI | 2-3 hours |
+| 8️⃣ | Face Detection | TensorFlow.js | 3-4 hours |
 
 **Total Learning Time:** ~15-20 hours
 
+👉 [**View Full Learning Path**](#-learning-path-for-developers)
+
 ---
 
-## 🚀 Quick Start for Learners
+## 🛠️ Quick Start
 
-### **Step 1: Fork & Clone**
+### For Users (Run the App):
 
 ```bash
-# Fork this repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/LearnLens.git
+# Clone the repository
+git clone https://github.com/devgunnu/LearnLens.git
 cd LearnLens
-```
 
-### **Step 2: Install Dependencies**
-
-```bash
+# Install dependencies
 npm install
-```
 
-### **Step 3: Setup Environment (for AI features)**
-
-```bash
-# Copy the example env file
-cp .env.example .env
-
-# Add your Gemini API key (get it from https://aistudio.google.com/app/apikey)
-# Edit .env and replace 'your_gemini_api_key_here' with your actual key
-```
-
-### **Step 4: Start Learning!**
-
-```bash
-# Checkout Level 1 branch
-git checkout level-1-basics
-
-# Read the tutorial
-cat docs/README-LEVEL-1.md
-
-# Start the dev server
+# Start the app
 npm start
 
-# Open http://localhost:3000 and start building!
+# Open http://localhost:3000
 ```
 
-### **Step 5: Complete Level & Merge**
+### For AI Features (Optional):
 
 ```bash
-# When you complete Level 1, merge to your main branch
-git checkout main
-git merge level-1-basics
-
-# Move to Level 2
-git checkout level-2-webcam
-
-# Repeat the process!
+# Get a free API key from https://aistudio.google.com/app/apikey
+# Add it in the app's settings panel
 ```
 
 ---
 
-## 🎓 Learning Approach
+## 🤖 AI Features
 
-### **How This Tutorial Works:**
+### 1. **AI Filter Recommendations**
+Get personalized filter suggestions based on the time of day, mood, and context.
 
-1. **Progressive Complexity** - Each level builds on the previous one
-2. **Hands-On Learning** - You write the code, not just read it
-3. **Boilerplate Provided** - Focus on core concepts, not setup
-4. **TODOs & Hints** - Clear guidance on what to implement
-5. **Educational Comments** - Learn WHY, not just HOW
-6. **Real-World Project** - Build something you can actually use
+```
+"Feeling productive?" → Suggests Focus, Clarity filters
+"Evening vibes?" → Suggests Warm, Vintage filters
+```
 
-### **What's Provided in Each Level:**
+### 2. **AI Vision Analysis**
+Upload your photo and get personalized suggestions:
+- Skin tone analysis
+- Lighting recommendations
+- Best filter matches for your appearance
 
-✅ **Boilerplate Code** - All setup, imports, and structure
-✅ **Step-by-Step Guide** - Detailed implementation instructions
-✅ **Code Examples** - Commented snippets showing how it works
-✅ **Key Concepts** - Deep dives into important topics
-✅ **Knowledge Checks** - Exercises to test your understanding
-✅ **Solution Branch** - Reference implementation if you get stuck
+### 3. **Face Detection**
+Real-time face analysis powered by TensorFlow.js:
+- 68 facial landmark points
+- Face contours (jawline, eyebrows, nose, lips, eyes)
+- Face matching and similarity detection
 
-### **What You'll Build:**
-
-🎯 **Working Code** - Implement features yourself with guidance
-🎯 **Understanding** - Learn concepts through practical application
-🎯 **Portfolio Project** - Production-ready app you can showcase
-
----
-
-## ✨ Features You'll Build
-
-### **Level 1-2: Foundation**
-- ⚛️ React components and state management
-- 📹 Webcam access with WebRTC
-- 🖼️ Real-time video rendering on canvas
-- 🪞 Mirror effect for selfie mode
-
-### **Level 3-4: Visual Effects**
-- 🎨 20+ CSS filters (Grayscale, Sepia, Vintage, Neon, etc.)
-- 🎚️ Filter intensity control (0-100%)
-- ✨ Beauty mode with skin smoothing
-- 📸 Photo capture with filters
-- 💾 Download captured images
-
-### **Level 5: Interactivity**
-- 🦄 20+ draggable emoji stickers
-- 🎯 Drag and drop positioning
-- 🗑️ Add/remove stickers
-- 📐 Coordinate transformations
-
-### **Level 6-7: AI Features**
-- 🤖 Gemini API integration
-- 💡 AI filter recommendations
-- 👁️ Vision AI for skin analysis
-- 🎯 Personalized suggestions
-- 🔐 Secure API key management
-
-### **Level 8: Machine Learning**
-- 🧠 Face detection with TensorFlow.js
-- 📊 68-point facial landmarks
-- 😊 Expression recognition (7 emotions)
-- 👤 Face matching and similarity
-- ⚡ Real-time ML inference
+### 4. **Emotion Recognition**
+Detect 7 emotions in real-time:
+- Happy, Sad, Angry, Surprised, Fearful, Disgusted, Neutral
 
 ---
 
-## 🛠️ Technologies & Tools
+## 🎨 Available Filters
 
-### **Core Technologies:**
+### Artistic Effects:
+- **Vintage** - Classic film look
+- **Cyberpunk** - Futuristic neon vibes
+- **Neon** - Electric glow effect
+- **Moonlight** - Ethereal blue tones
+
+### Color Adjustments:
+- **Warm** - Cozy, inviting tones
+- **Cool** - Fresh, professional look
+- **Vibrant** - Saturated, punchy colors
+- **Muted** - Subtle, sophisticated tones
+
+### Creative Styles:
+- **Dramatic** - High contrast
+- **Ethereal** - Dreamy, soft focus
+- **Noir** - Black and white with grain
+- **Retro** - 80s/90s aesthetics
+
+**...and 10+ more!**
+
+---
+
+## 🛡️ Privacy & Security
+
+- ✅ **No server uploads** - All processing happens locally
+- ✅ **No data collection** - Your photos never leave your device
+- ✅ **No tracking** - No analytics, no cookies
+- ✅ **Open source** - Audit the code yourself
+- ✅ **API key control** - You manage your own AI keys
+
+---
+
+## 💻 Tech Stack
+
+### Core Technologies:
 - **React 19.2** - Modern UI framework
 - **WebRTC** - Real-time media streaming
 - **Canvas API** - 2D graphics rendering
-- **CSS3** - Advanced styling and filters
+- **Tailwind CSS** - Utility-first styling
+- **Framer Motion** - Smooth animations
 
-### **AI & Machine Learning:**
+### AI & Machine Learning:
 - **Google Gemini API** - Text and vision AI
 - **TensorFlow.js** - Browser-based ML
 - **Face-API.js** - Face detection library
 
-### **Development Tools:**
+### Build Tools:
 - **Create React App** - Build tooling
+- **GitHub Pages** - Deployment
 - **Git Branches** - Level-based workflow
 - **Environment Variables** - Secure config
 
@@ -219,203 +219,6 @@ Git Branches:
 
 ---
 
-## 🎓 For Instructors & Teachers
-
-### **Using This in Your Classroom:**
-
-✅ **Self-Paced Learning** - Students work at their own speed
-✅ **Clear Milestones** - 8 distinct achievement points
-✅ **Assessment Ready** - Knowledge checks in each level
-✅ **Portfolio Building** - Students create real projects
-✅ **No Setup Hassle** - Everything pre-configured
-
-### **Recommended Teaching Flow:**
-
-1. **Week 1-2:** Levels 1-2 (React & WebRTC Fundamentals)
-2. **Week 3-4:** Levels 3-4 (Canvas & Image Processing)
-3. **Week 5-6:** Level 5 (Event Handling & Drag-Drop)
-4. **Week 7-8:** Levels 6-7 (API Integration & AI)
-5. **Week 9-10:** Level 8 (Machine Learning)
-
----
-
-## 📖 Detailed Level Breakdown
-
-### **🟢 Level 1: React Basics** (Beginner)
-
-**What You'll Learn:**
-- Component structure and JSX syntax
-- `useState` for managing state
-- Event handlers and user input
-- Basic button interactions
-
-**Build:** Simple interactive button with state changes
-
-**Prerequisites:** Basic HTML, CSS, JavaScript knowledge
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-1.md)**
-
----
-
-### **🟢 Level 2: Webcam & Canvas** (Beginner)
-
-**What You'll Learn:**
-- `useRef` hook for DOM access
-- WebRTC `getUserMedia` API
-- Canvas 2D rendering context
-- `requestAnimationFrame` loop
-- `useEffect` for lifecycle management
-
-**Build:** Live webcam feed on canvas
-
-**Prerequisites:** Level 1 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-2.md)**
-
----
-
-### **🟡 Level 3: Filters & Effects** (Intermediate)
-
-**What You'll Learn:**
-- CSS `filter` property (20+ effects)
-- Canvas transformations (mirror, scale)
-- Dynamic filter switching
-- Range slider controls
-- Conditional rendering
-
-**Build:** Selectable filters with intensity control
-
-**Prerequisites:** Level 2 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-3.md)**
-
----
-
-### **🟡 Level 4: Photo Capture** (Intermediate)
-
-**What You'll Learn:**
-- Canvas `toDataURL()` method
-- Blob API and file downloads
-- Modal component patterns
-- Composite canvas rendering
-- CSS animations (flash effect)
-
-**Build:** Photo capture and download system
-
-**Prerequisites:** Level 3 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-4.md)**
-
----
-
-### **🟡 Level 5: Stickers & Drag** (Intermediate)
-
-**What You'll Learn:**
-- Drag and Drop API
-- Mouse/touch event handling
-- Coordinate transformations
-- Array state management
-- Event delegation patterns
-
-**Build:** Draggable emoji stickers with categories
-
-**Prerequisites:** Level 4 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-5.md)**
-
----
-
-### **🔴 Level 6: AI Integration** (Advanced)
-
-**What You'll Learn:**
-- Environment variables (`.env` files)
-- API key security best practices
-- Async/await for API calls
-- Error handling patterns
-- Gemini AI API basics
-
-**Build:** AI-powered filter recommendations
-
-**Prerequisites:** Level 5 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-6.md)**
-
----
-
-### **🔴 Level 7: AI Vision** (Advanced)
-
-**What You'll Learn:**
-- Base64 image encoding
-- Multimodal AI (text + image)
-- Canvas image extraction
-- Vision API prompting
-- Personalized AI recommendations
-
-**Build:** AI skin analysis with custom suggestions
-
-**Prerequisites:** Level 6 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-7.md)**
-
----
-
-### **🔴 Level 8: Face Detection** (Advanced)
-
-**What You'll Learn:**
-- TensorFlow.js basics
-- Loading ML models
-- Face-API.js library
-- Real-time face detection
-- Facial landmarks (68 points)
-- Expression recognition
-- Face matching algorithms
-- Performance optimization
-
-**Build:** Complete face analysis system
-
-**Prerequisites:** Level 7 completed
-
-**[📚 Full Tutorial →](./docs/README-LEVEL-8.md)**
-
----
-
-## 💻 Available Scripts
-
-### **Development**
-
-```bash
-# Start development server (http://localhost:3000)
-npm start
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-
-# Eject from Create React App (not recommended for learners)
-npm run eject
-```
-
-### **Git Workflow**
-
-```bash
-# List all learning branches
-git branch -a
-
-# Switch to a specific level
-git checkout level-3-filters
-
-# See your progress
-git log --oneline
-
-# Merge completed level to main
-git checkout main
-git merge level-3-filters
-```
-
----
-
 ## 🌐 Browser Support
 
 | Browser | Version | Support |
@@ -427,162 +230,225 @@ git merge level-3-filters
 | Opera | 76+ | ✅ Full Support |
 
 **Requirements:**
-- WebRTC support (for webcam access)
-- Canvas API support (for rendering)
-- ES6+ JavaScript support
+- Webcam access
+- WebRTC support
+- Modern JavaScript (ES6+)
+
+---
+
+## 📚 Learning Path for Developers
+
+Want to build LearnLens yourself? Follow our progressive tutorial:
+
+### 🟢 Beginner Levels (1-2)
+
+**Level 1: React Basics**
+- Component structure and JSX
+- useState for state management
+- Event handlers and user input
+
+**Level 2: Webcam & Canvas**
+- useRef hook for DOM access
+- WebRTC getUserMedia API
+- Canvas 2D rendering
+- requestAnimationFrame loop
+
+### 🟡 Intermediate Levels (3-5)
+
+**Level 3: Filters & Effects**
+- CSS filter property
+- Canvas transformations
+- Dynamic filter switching
+
+**Level 4: Photo Capture**
+- Canvas toDataURL()
+- Blob API and downloads
+- Modal components
+
+**Level 5: Stickers & Drag**
+- Drag and Drop API
+- Coordinate transformations
+- Event handling
+
+### 🔴 Advanced Levels (6-8)
+
+**Level 6: AI Integration**
+- Environment variables
+- API key security
+- Async/await patterns
+- Gemini AI API
+
+**Level 7: AI Vision**
+- Base64 encoding
+- Multimodal AI (text + image)
+- Vision API prompting
+
+**Level 8: Face Detection**
+- TensorFlow.js basics
+- Loading ML models
+- Facial landmarks
+- Expression recognition
+
+### 📖 Learning Instructions:
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/LearnLens.git
+cd LearnLens
+
+# Install dependencies
+npm install
+
+# Start with Level 1
+git checkout level-1-basics
+
+# Read the tutorial
+cat docs/README-LEVEL-1.md
+
+# Start building!
+npm start
+
+# When complete, merge and move to next level
+git checkout main
+git merge level-1-basics
+git checkout level-2-webcam
+```
+
+Each level includes:
+- ✅ Step-by-step guide
+- ✅ Code examples with comments
+- ✅ Key concepts explained
+- ✅ Knowledge checks
+- ✅ Solution branch for reference
+
+---
+
+## 📂 Project Structure
+
+```
+learnlens/
+├── public/
+│   ├── models/              # Pre-trained ML models
+│   │   ├── tiny_face_detector_model/
+│   │   ├── face_landmark_68_model/
+│   │   ├── face_expression_model/
+│   │   └── face_recognition_model/
+│   ├── index.html
+│   └── manifest.json
+│
+├── src/
+│   ├── components/
+│   │   ├── landing/         # Landing page components
+│   │   └── app/             # App components
+│   ├── App.js               # Main component
+│   ├── App.css              # Styling
+│   └── index.js             # Entry point
+│
+├── docs/                    # Learning tutorials (8 levels)
+├── tailwind.config.js       # Tailwind configuration
+├── package.json
+└── README.md
+```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions from learners, educators, and developers!
+We welcome contributions! Whether you want to:
 
-### **Ways to Contribute:**
-
-#### **For Learners:**
-- 📝 Report unclear documentation
-- 💡 Suggest improvements to tutorials
-- 🐛 Report bugs you encounter
-- ⭐ Share your learning experience
-
-#### **For Educators:**
-- 📚 Share how you used this in teaching
-- 🎓 Suggest additional exercises
-- 📖 Create supplementary materials
+- 🐛 Report bugs
+- ✨ Suggest features
+- 📚 Improve documentation
+- 🎨 Add new filters
+- 🤖 Enhance AI features
 - 🌍 Translate to other languages
 
-#### **For Developers:**
-- 🔧 Fix bugs in any branch
-- ✨ Add new features
-- ⚡ Improve performance
-- 🧪 Write tests
-- 📄 Improve documentation
-
-**[📖 Full Contribution Guidelines →](./CONTRIBUTING.md)**
+**[📖 Contribution Guidelines →](./CONTRIBUTING.md)**
 
 ---
 
-## 📚 Additional Resources
+## 📜 License
 
-### **Official Documentation:**
-- [React Docs](https://react.dev/) - Learn React fundamentals
-- [MDN Web APIs](https://developer.mozilla.org/en-US/docs/Web/API) - WebRTC, Canvas, and more
-- [TensorFlow.js](https://www.tensorflow.org/js) - Machine learning in the browser
-- [Gemini API](https://ai.google.dev/) - Google's AI platform
+MIT License - Free to use, modify, and distribute.
 
-### **Recommended Learning:**
-- [JavaScript.info](https://javascript.info/) - Modern JavaScript tutorial
-- [React Beta Docs](https://react.dev/learn) - Interactive React course
-- [Web.dev](https://web.dev/) - Web development best practices
-
+**What this means:**
+- ✅ Use for personal projects
+- ✅ Use in your portfolio
+- ✅ Use commercially
+- ✅ Modify and extend
+- 📝 Keep the license notice
 ### **Community:**
 - [Discord Server](#) - Join our learning community
 - [GitHub Discussions](https://github.com/devgunnu/LearnLens/discussions) - Ask questions
 
 ---
 
-## 🎯 Learning Paths by Experience Level
+## 🙏 Acknowledgments
 
-### **👶 Complete Beginner**
-- Start with Level 1
-- Take your time with Levels 2-3
-- Consider pausing at Level 5
-- Return to Levels 6-8 after more practice
+Built with amazing open-source tools:
 
-### **💼 Some JavaScript Experience**
-- Skim Level 1 for React refresh
-- Start building from Level 2
-- Complete through Level 6
-- Challenge yourself with Levels 7-8
-
-### **🚀 Experienced Developer**
-- Review Levels 1-5 for React patterns
-- Focus on Levels 6-8 for AI/ML integration
-- Explore the production code on main branch
-- Consider contributing new levels!
+- **React Team** - UI framework
+- **TensorFlow.js** - ML in the browser
+- **Vladimir Mandic** - face-api.js
+- **Google** - Gemini API
+- **Aceternity UI** - Beautiful components
+- **All Contributors** - Making this better
 
 ---
 
 ## ❓ FAQ
 
-### **Do I need prior React experience?**
-No! Level 1 teaches React basics from scratch. However, basic HTML, CSS, and JavaScript knowledge is recommended.
+### **Is LearnLens free?**
+Yes! Completely free and open-source. AI features require a free Gemini API key.
 
-### **Is this free?**
-Yes, completely free! The only cost is if you want to use the AI features (Levels 6-7), which require a Google Gemini API key (free tier available).
+### **Is my data private?**
+Absolutely. All processing happens locally in your browser. Nothing is uploaded to servers.
 
-### **Can I skip levels?**
-While each level builds on the previous one, you can checkout any branch to see the code. However, we recommend following the order for the best learning experience.
+### **Do I need to install anything?**
+No! Just open the website and start using it. For development, you'll need Node.js.
 
-### **What if I get stuck?**
-1. Re-read the level's README
-2. Check the solution branch (e.g., `level-3-solution`)
-3. Ask in GitHub Discussions
-4. Review the complete code on main branch
+### **Can I use this offline?**
+Core filters work offline. AI features require internet for API calls.
 
-### **Can I use this for my portfolio?**
-Absolutely! Once you complete the levels, you'll have a production-ready app you can showcase. Just remember to credit the original project.
+### **What if I don't have a webcam?**
+You can still upload photos and apply filters!
 
-### **How long does it take to complete?**
-Most learners complete all 8 levels in 15-20 hours spread over 2-4 weeks. Go at your own pace!
+### **Can I add custom filters?**
+Yes! The code is open-source. Add your own CSS filters or contribute them back.
 
-### **Do I need a powerful computer?**
-No. Any modern computer (Windows, Mac, Linux) with a webcam and web browser can run this project.
+### **How does face detection work?**
+We use TensorFlow.js and face-api.js to run ML models directly in your browser.
 
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### **What This Means:**
-✅ Free to use for learning
-✅ Free to modify and extend
-✅ Free to use in your portfolio
-✅ Free to use commercially
-📝 Just keep the license notice
-
----
-
-## 🙏 Acknowledgments
-
-**Built with love by learners, for learners.**
-
-Special thanks to:
-- **React Team** - For the amazing framework
-- **TensorFlow.js Team** - For bringing ML to the browser
-- **Vladimir Mandic** - For the excellent face-api.js library
-- **Google** - For the Gemini API
-- **All Contributors** - For making this better
+### **Can I use this for commercial projects?**
+Yes, under the MIT license. Just keep the license notice.
 
 ---
 
 ## 🌟 Show Your Support
 
-If this project helped you learn:
+If you love LearnLens:
 - ⭐ Star this repo
-- 🍴 Fork it to your account
-- 📢 Share with fellow learners
-- 💬 Leave feedback in Discussions
+- 🍴 Fork it
+- 📢 Share with friends
 - 🐛 Report issues
-- 🤝 Contribute improvements
+- 🤝 Contribute
 
 ---
 
 ## 📞 Contact & Support
 
 - **GitHub Issues:** [Report bugs or request features](https://github.com/devgunnu/LearnLens/issues)
-- **Discussions:** [Ask questions or share your project](https://github.com/devgunnu/LearnLens/discussions)
-- **Twitter:** [@devgunnu](https://twitter.com/devgunnu)
+- **Discussions:** [Ask questions or share feedback](https://github.com/devgunnu/LearnLens/discussions)
+- **Twitter:** [@devgunnu7](https://twitter.com/devgunnu7)
 
 ---
 
 <div align="center">
 
-**Ready to start your learning journey?**
+**Ready to transform your webcam experience?**
 
-[🚀 Get Started](#-quick-start-for-learners) | [📚 View Tutorials](./docs/) | [🤝 Contribute](./CONTRIBUTING.md)
+[🚀 Launch App](https://devgunnu.github.io/LearnLens) | [📚 Learn to Build](https://github.com/devgunnu/LearnLens/tree/main/docs) | [🤝 Contribute](./CONTRIBUTING.md)
 
-Made with ❤️ for the JavaScript learning community
+Made with ❤️ for creators, learners, and developers
 
 </div>

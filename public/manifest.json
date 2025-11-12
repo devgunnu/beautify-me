@@ -1,6 +1,7 @@
 {
   "short_name": "LearnLens",
-  "name": "LearnLens - Webcam Filters App",
+  "name": "LearnLens - AI-Powered Webcam Filters",
+  "description": "AI-powered webcam filters with face detection, emotion recognition, and personalized recommendations. Transform your webcam experience with 20+ real-time filters or learn to build it yourself.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +21,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#a855f7",
+  "background_color": "#0f0c29"
 }
