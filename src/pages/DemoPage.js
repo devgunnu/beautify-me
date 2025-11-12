@@ -605,14 +605,13 @@ function DemoPage() {
       // Draw placed stickers on top
       if (placedStickers.length > 0) {
         placedStickers.forEach((sticker) => {
-          // Mirror the x-coordinate to match the flipped live view
-          const x = compositeCanvas.width - (sticker.x / 100) * compositeCanvas.width;
+          // Canvas is already mirrored, so use positions directly
+          const x = (sticker.x / 100) * compositeCanvas.width;
           const y = (sticker.y / 100) * compositeCanvas.height;
 
           ctx.save();
           ctx.translate(x, y);
-          // Flip rotation for mirrored canvas
-          ctx.rotate((-sticker.rotation * Math.PI) / 180);
+          ctx.rotate((sticker.rotation * Math.PI) / 180);
           ctx.font = `${sticker.size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
