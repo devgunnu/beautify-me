@@ -68,7 +68,7 @@ No installation, no sign-up, no tracking. Just open and use!
 ```bash
 # Clone the repository
 git clone https://github.com/devgunnu/LearnLens.git
-cd beautify-me
+cd LearnLens
 
 # Install dependencies
 npm install
