@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/beautify-me/static/css/main.4cb05e45.css",
-    "main.js": "/beautify-me/static/js/main.2590f810.js",
-    "static/js/453.16620926.chunk.js": "/beautify-me/static/js/453.16620926.chunk.js",
-    "index.html": "/beautify-me/index.html",
-    "main.4cb05e45.css.map": "/beautify-me/static/css/main.4cb05e45.css.map",
-    "main.2590f810.js.map": "/beautify-me/static/js/main.2590f810.js.map",
-    "453.16620926.chunk.js.map": "/beautify-me/static/js/453.16620926.chunk.js.map"
+    "main.css": "/LearnLens/static/css/main.e0cc88e2.css",
+    "main.js": "/LearnLens/static/js/main.3dd02a24.js",
+    "static/js/453.65454859.chunk.js": "/LearnLens/static/js/453.65454859.chunk.js",
+    "index.html": "/LearnLens/index.html",
+    "main.e0cc88e2.css.map": "/LearnLens/static/css/main.e0cc88e2.css.map",
+    "main.3dd02a24.js.map": "/LearnLens/static/js/main.3dd02a24.js.map",
+    "453.65454859.chunk.js.map": "/LearnLens/static/js/453.65454859.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.4cb05e45.css",
-    "static/js/main.2590f810.js"
+    "static/css/main.e0cc88e2.css",
+    "static/js/main.3dd02a24.js"
   ]
 }
