@@ -32,6 +32,8 @@ function DemoPage() {
   const [aiRecommendation, setAiRecommendation] = useState('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
 
   // AI Vision Analysis state
   /** Stores the AI skin analysis results */
@@ -45,7 +47,6 @@ function DemoPage() {
 
   // Face detection data state (separate from rendering)
   /** Stores the most recent face detection results */
-  const [faceDetections, setFaceDetections] = useState([]);
   const faceDetectionsRef = useRef([]);
   const faceDetectionIntervalRef = useRef(null);
   const faceDetectionRunningRef = useRef(false);
@@ -137,7 +138,6 @@ function DemoPage() {
    */
   const loadFaceApiModels = async () => {
     try {
-      console.log('Loading face-api.js models...');
       // Use PUBLIC_URL for GitHub Pages compatibility
       const MODEL_URL = `${process.env.PUBLIC_URL}/models`;
 
@@ -149,7 +149,6 @@ function DemoPage() {
         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
       ]);
 
-      console.log('Face-api.js models loaded successfully!');
       faceDetectorRef.current = true; // Mark as loaded
       return true;
     } catch (err) {
@@ -425,7 +424,6 @@ function DemoPage() {
       if (detection && detection.descriptor) {
         setReferenceDescriptor(detection.descriptor);
         setShowFaceMatching(true);
-        console.log('Reference face captured successfully!');
       } else {
         setError('No face detected. Please ensure your face is visible.');
       }
@@ -781,8 +779,6 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
       // Update state with results
       setSkinAnalysisResult(analysisText);
       setIsAnalyzing(false);
-
-      console.log('✅ AI Vision Analysis completed successfully!');
     } catch (err) {
       console.error('Error analyzing with Gemini Vision:', err);
       // Check if it's an API key error
@@ -823,11 +819,10 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
         // Detect faces with landmarks
         const detections = await detectFaces();
 
-        // Update both state and ref with new detections
+        // Update ref with new detections
         // Ref ensures render loop always has latest data without re-rendering
         const newDetections = detections || [];
         faceDetectionsRef.current = newDetections;
-        setFaceDetections(newDetections);
       } catch (err) {
         console.error('Face detection error:', err);
       }
@@ -909,18 +904,35 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
     }
   };
 
+  // Save API key to localStorage
+  const saveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      localStorage.setItem('gemini_api_key', apiKeyInput.trim());
+      setGeminiKey(apiKeyInput.trim());
+      setShowApiKeyModal(false);
+      setApiKeyInput('');
+    }
+  };
+
+  // Clear API key from localStorage
+  const clearApiKey = () => {
+    localStorage.removeItem('gemini_api_key');
+    setGeminiKey('');
+    setApiKeyInput('');
+    setShowApiKeyModal(false);
+  };
+
   // Load face-api models on mount
   useEffect(() => {
     loadFaceApiModels();
-    // Load API key from environment variable
-    // Educational Note: GEMINI_API_KEY is loaded from .env file for secure API key management
-    const apiKey = process.env.REACT_APP_GEMINI_API_KEY || '';
-    if (apiKey) {
-      setGeminiKey(apiKey);
-      console.log('✅ Gemini API key loaded successfully from .env');
-    } else {
-      console.warn('⚠️ REACT_APP_GEMINI_API_KEY not found in .env file. AI features will be disabled.');
-      console.log('📚 Tutorial: Add your Gemini API key to .env file (see .env.example)');
+    // Load API key from localStorage (user's private storage) or environment variable
+    const storedKey = localStorage.getItem('gemini_api_key');
+    const envKey = process.env.REACT_APP_GEMINI_API_KEY || '';
+
+    if (storedKey) {
+      setGeminiKey(storedKey);
+    } else if (envKey) {
+      setGeminiKey(envKey);
     }
   }, []);
 
@@ -965,7 +977,7 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
       faceDetectionLoop();
     } else {
       // Clear detections when disabled
-      setFaceDetections([]);
+      faceDetectionsRef.current = [];
     }
 
     return () => {
@@ -1384,6 +1396,48 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
                     <div className="tab-panel">
                       <h3 className="panel-title">AI-Powered Features</h3>
 
+                      {/* API Key Management */}
+                      <div className="ai-feature-section">
+                        <label className="section-label">🔑 API Key Settings</label>
+                        <p className="feature-description">
+                          {geminiKey ? '✓ API key configured' : 'Add your Gemini API key to enable AI features'}
+                        </p>
+                        {!geminiKey ? (
+                          <div>
+                            <button
+                              className="ai-button"
+                              onClick={() => setShowApiKeyModal(true)}
+                            >
+                              ➕ Add API Key
+                            </button>
+                            <p className="feature-description" style={{ marginTop: '10px', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                              Get a free API key at{' '}
+                              <a
+                                href="https://aistudio.google.com/app/api-keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#a855f7', textDecoration: 'underline' }}
+                              >
+                                Google AI Studio
+                              </a>
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="success-message" style={{ fontSize: '0.85rem' }}>
+                              🔒 Stored securely in your browser only
+                            </p>
+                            <button
+                              className="ai-button danger"
+                              onClick={clearApiKey}
+                              style={{ marginTop: '10px' }}
+                            >
+                              🗑️ Remove API Key
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                       {/* AI Filter Recommendation */}
                       <div className="ai-feature-section">
                         <label className="section-label">✨ Filter Suggestion</label>
@@ -1484,6 +1538,55 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
                   </svg>
                   Download Photo
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* API Key Modal */}
+          {showApiKeyModal && (
+            <div className="photo-preview-modal" onClick={() => setShowApiKeyModal(false)}>
+              <div className="api-key-modal-content" onClick={(e) => e.stopPropagation()}>
+                <button className="close-preview" onClick={() => setShowApiKeyModal(false)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <h2 style={{ color: 'white', marginBottom: '20px', fontSize: '1.5rem' }}>🔑 Add Gemini API Key</h2>
+                <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '15px', lineHeight: '1.6' }}>
+                  Your API key is stored locally in your browser's localStorage and never sent to any server except Google's Gemini API.
+                </p>
+                <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '20px', fontSize: '0.9rem' }}>
+                  Get a free API key at{' '}
+                  <a
+                    href="https://aistudio.google.com/app/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#a855f7', textDecoration: 'underline' }}
+                  >
+                    Google AI Studio
+                  </a>
+                </p>
+                <input
+                  type="password"
+                  placeholder="Paste your API key here..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && saveApiKey()}
+                  className="api-key-input"
+                  autoFocus
+                />
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                  <button className="download-button" onClick={saveApiKey} disabled={!apiKeyInput.trim()}>
+                    💾 Save Key
+                  </button>
+                  <button
+                    className="ai-button danger"
+                    onClick={() => setShowApiKeyModal(false)}
+                    style={{ flex: 1 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}

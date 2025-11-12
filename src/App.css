@@ -2443,3 +2443,51 @@ html {
     padding: 6px;
   }
 }
+
+/* API Key Modal */
+.api-key-modal-content {
+  position: relative;
+  max-width: 500px;
+  width: 90%;
+  background: linear-gradient(135deg, #1a1535 0%, #0f0c29 100%);
+  border: 2px solid rgba(168, 85, 247, 0.5);
+  border-radius: 20px;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.api-key-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  color: white;
+  font-size: 0.95rem;
+  font-family: 'Monaco', 'Courier New', monospace;
+  transition: all 0.3s ease;
+}
+
+.api-key-input:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.api-key-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.download-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.download-button:disabled:hover {
+  transform: none;
+  box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
+}
