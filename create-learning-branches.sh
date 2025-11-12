@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Beautify Me - Learning Branch Creation Script
+# LearnLens - Learning Branch Creation Script
 # This script creates all learning and solution branches for the 8-level tutorial
 
 set -e  # Exit on error
 
-echo "🎓 Creating Learning Branches for Beautify Me"
+echo "🎓 Creating Learning Branches for LearnLens"
 echo "=============================================="
 echo ""
 

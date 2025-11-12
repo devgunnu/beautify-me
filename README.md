@@ -167,6 +167,55 @@ Detect 7 emotions in real-time:
 ### Build Tools:
 - **Create React App** - Build tooling
 - **GitHub Pages** - Deployment
+- **Git Branches** - Level-based workflow
+- **Environment Variables** - Secure config
+
+---
+
+## 📂 Project Structure
+
+```
+LearnLens/
+├── public/
+│   ├── models/              # Pre-trained ML models for face detection
+│   │   ├── tiny_face_detector_model/
+│   │   ├── face_landmark_68_model/
+│   │   ├── face_expression_model/
+│   │   └── face_recognition_model/
+│   ├── index.html
+│   └── manifest.json
+│
+├── src/
+│   ├── App.js              # Main component (1800+ lines of learning material)
+│   ├── App.css             # Complete styling (1500+ lines)
+│   ├── index.js            # React entry point
+│   └── index.css           # Global styles
+│
+├── docs/                   # Learning documentation
+│   ├── README-LEVEL-1.md   # Level 1: React Basics
+│   ├── README-LEVEL-2.md   # Level 2: Webcam & Canvas
+│   ├── README-LEVEL-3.md   # Level 3: Filters & Effects
+│   ├── README-LEVEL-4.md   # Level 4: Photo Capture
+│   ├── README-LEVEL-5.md   # Level 5: Stickers & Drag
+│   ├── README-LEVEL-6.md   # Level 6: AI Integration
+│   ├── README-LEVEL-7.md   # Level 7: AI Vision
+│   └── README-LEVEL-8.md   # Level 8: Face Detection
+│
+├── .env.example            # Environment variable template
+├── .gitignore
+├── package.json
+├── README.md               # This file
+├── CONTRIBUTING.md         # Contributor guidelines
+└── CODE_EXAMPLES.md        # Additional code examples
+
+Git Branches:
+├── main                    # Complete production code
+├── level-1-basics          # Starting point for Level 1
+├── level-2-webcam          # Starting point for Level 2
+├── ... (all 8 levels)
+├── level-1-solution        # Reference solution for Level 1
+└── ... (all 8 solutions)
+```
 
 ---
 
@@ -328,6 +377,9 @@ MIT License - Free to use, modify, and distribute.
 - ✅ Use commercially
 - ✅ Modify and extend
 - 📝 Keep the license notice
+### **Community:**
+- [Discord Server](#) - Join our learning community
+- [GitHub Discussions](https://github.com/devgunnu/LearnLens/discussions) - Ask questions
 
 ---
 
