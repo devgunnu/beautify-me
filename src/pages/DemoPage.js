@@ -980,7 +980,66 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWebcamActive, faceDetectionEnabled, showBoundingBox, showExpressions, landmarkColorMode, referenceDescriptor]);
 
-  // CSS handles the infinite scroll animation now - no JavaScript needed!
+  // Netflix-style seamless infinite scroll
+  const scrollTrackRef = useRef(null);
+  const isResettingRef = useRef(false);
+
+  useEffect(() => {
+    const scrollTrack = scrollTrackRef.current;
+    if (!scrollTrack || !isWebcamActive) return;
+
+    // Initialize scroll to middle of duplicated content for seamless loop
+    const initScroll = () => {
+      if (scrollTrack.scrollLeft === 0) {
+        const scrollWidth = scrollTrack.scrollWidth;
+        const clientWidth = scrollTrack.clientWidth;
+        const middlePosition = (scrollWidth - clientWidth) / 2;
+        scrollTrack.scrollLeft = middlePosition;
+      }
+    };
+
+    // Wait for content to render before initializing
+    setTimeout(initScroll, 100);
+
+    const handleScroll = () => {
+      // Don't interfere during programmatic resets
+      if (isResettingRef.current) return;
+
+      const scrollLeft = scrollTrack.scrollLeft;
+      const scrollWidth = scrollTrack.scrollWidth;
+      const clientWidth = scrollTrack.clientWidth;
+      const maxScroll = scrollWidth - clientWidth;
+      const singleCopyWidth = maxScroll / 2;
+
+      // Netflix-style: Check boundaries and seamlessly loop
+      // Using requestAnimationFrame for smoother transition
+      if (scrollLeft <= 5) {
+        // Hit left boundary - jump to end of first copy
+        isResettingRef.current = true;
+        requestAnimationFrame(() => {
+          scrollTrack.scrollLeft = singleCopyWidth;
+          requestAnimationFrame(() => {
+            isResettingRef.current = false;
+          });
+        });
+      } else if (scrollLeft >= maxScroll - 5) {
+        // Hit right boundary - jump to start of second copy
+        isResettingRef.current = true;
+        requestAnimationFrame(() => {
+          scrollTrack.scrollLeft = singleCopyWidth;
+          requestAnimationFrame(() => {
+            isResettingRef.current = false;
+          });
+        });
+      }
+    };
+
+    scrollTrack.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      scrollTrack.removeEventListener('scroll', handleScroll);
+    };
+  }, [isWebcamActive]);
 
   const startWebcam = async () => {
     try {
@@ -1122,15 +1181,16 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
                 )}
               </div>
 
-              {/* Filters below camera - CSS Infinite Scroll */}
+              {/* Filters below camera - Netflix-style Infinite Scroll */}
               {isWebcamActive && (
                 <div className="filters-container">
-                  <div className="filters-scroll-track">
+                  <div className="filters-scroll-track" ref={scrollTrackRef}>
                     <div className="filters-scroll-wrapper">
+                      {/* First copy of filters */}
                       <div className="filters-scroll-content">
-                        {filters.map((filter, index) => (
+                        {filters.map((filter) => (
                           <button
-                            key={`${filter.id}-${index}`}
+                            key={`${filter.id}-first`}
                             className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
                             onClick={() => {
                               setSelectedFilter(selectedFilter === filter.id ? 'none' : filter.id);
@@ -1141,10 +1201,11 @@ Keep recommendations under 80 words total. Be specific and helpful.`;
                           </button>
                         ))}
                       </div>
+                      {/* Second copy for seamless infinite scroll */}
                       <div className="filters-scroll-content" aria-hidden="true">
-                        {filters.map((filter, index) => (
+                        {filters.map((filter) => (
                           <button
-                            key={`${filter.id}-copy-${index}`}
+                            key={`${filter.id}-second`}
                             className={`filter-button ${selectedFilter === filter.id ? 'active' : ''}`}
                             onClick={() => {
                               setSelectedFilter(selectedFilter === filter.id ? 'none' : filter.id);

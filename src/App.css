@@ -1587,8 +1587,11 @@ html {
 
 .filters-scroll-track {
   padding: 16px 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   cursor: grab;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
   mask-image: linear-gradient(
     to right,
     transparent,
@@ -1603,39 +1606,22 @@ html {
     black 95%,
     transparent
   );
+  scroll-behavior: auto; /* Instant scrolling for seamless loop jumps */
+  scroll-snap-type: x proximity; /* Snap filters into place smoothly */
+  -webkit-overflow-scrolling: touch; /* Smooth momentum scrolling on iOS */
+}
+
+.filters-scroll-track::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .filters-scroll-track:active {
   cursor: grabbing;
 }
 
-.filters-scroll-track::-webkit-scrollbar {
-  height: 6px;
-}
-
-.filters-scroll-track::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-}
-
-.filters-scroll-track::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.5);
-  border-radius: 10px;
-}
-
-.filters-scroll-track::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.7);
-}
-
 .filters-scroll-wrapper {
   display: flex;
   width: fit-content;
-  animation: infinite-scroll 40s linear infinite;
-  will-change: transform;
-}
-
-.filters-scroll-wrapper:hover {
-  animation-play-state: paused;
 }
 
 .filters-scroll-content {
@@ -1643,15 +1629,6 @@ html {
   gap: 12px;
   flex-shrink: 0;
   padding-right: 12px;
-}
-
-@keyframes infinite-scroll {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(calc(-50% - 12px));
-  }
 }
 
 .filter-button {
@@ -1668,19 +1645,22 @@ html {
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   min-width: 80px;
+  scroll-snap-align: center; /* Snap each filter to center */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Subtle depth */
 }
 
 .filter-button:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(168, 85, 247, 0.4);
   transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3); /* Enhanced glow on hover */
 }
 
 .filter-button.active {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.3));
-  border-color: rgba(168, 85, 247, 0.8);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
-  transform: translateY(-3px) scale(1.05);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(139, 92, 246, 0.4));
+  border-color: rgba(168, 85, 247, 0.9);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.6), 0 0 20px rgba(168, 85, 247, 0.4); /* Double shadow for depth */
+  transform: translateY(-3px) scale(1.08);
 }
 
 .filter-icon {
