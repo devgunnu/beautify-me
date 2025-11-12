@@ -293,8 +293,8 @@ Want to build LearnLens yourself? Follow our progressive tutorial:
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/beautify-me.git
-cd beautify-me
+git clone https://github.com/YOUR_USERNAME/LearnLens.git
+cd LearnLens
 
 # Install dependencies
 npm install
