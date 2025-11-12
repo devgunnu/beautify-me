@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const CTASection = ({ onLaunchApp }) => {
+const CTASection = () => {
   return (
     <section className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
@@ -48,8 +49,8 @@ const CTASection = ({ onLaunchApp }) => {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="flex flex-col sm:flex-row gap-4 justify-center items-center"
             >
-              <button
-                onClick={onLaunchApp}
+              <Link
+                to="/demo"
                 className="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-primary-600 bg-white rounded-lg hover:scale-105 transition-all duration-300 shadow-xl"
               >
                 <span className="flex items-center gap-2">
@@ -61,7 +62,7 @@ const CTASection = ({ onLaunchApp }) => {
                     →
                   </motion.span>
                 </span>
-              </button>
+              </Link>
 
               <a
                 href="https://github.com/devgunnu/LearnLens"

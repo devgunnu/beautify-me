@@ -1,9 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HeroHighlight, Highlight } from '../ui/HeroHighlight';
 import { TypewriterEffect } from '../ui/TypewriterEffect';
 
-const Hero = ({ onLaunchApp, onLearnMore }) => {
+const Hero = ({ onLearnMore }) => {
   const features = [
     '20+ Real-Time Filters',
     'AI-Powered Recommendations',
@@ -68,8 +69,8 @@ const Hero = ({ onLaunchApp, onLearnMore }) => {
           transition={{ duration: 0.5, delay: 0.7 }}
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
-          <button
-            onClick={onLaunchApp}
+          <Link
+            to="/demo"
             className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-primary-600 to-accent-600 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/50"
           >
             <span className="relative z-10 flex items-center gap-2">
@@ -82,7 +83,7 @@ const Hero = ({ onLaunchApp, onLearnMore }) => {
               </motion.span>
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </button>
+          </Link>
 
           <button
             onClick={onLearnMore}

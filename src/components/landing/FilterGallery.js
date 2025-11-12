@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const FilterGallery = ({ onFilterSelect }) => {
+const FilterGallery = () => {
   const filters = [
     { id: 'none', name: 'Original', icon: '✨', description: 'Pure, unfiltered you' },
     { id: 'grayscale', name: 'Grayscale', icon: '⚫', description: 'Classic black & white' },
@@ -88,15 +89,17 @@ const FilterGallery = ({ onFilterSelect }) => {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[160px]"
         >
           {filters.map((filter, index) => (
-            <motion.div
+            <Link
               key={filter.id}
-              variants={item}
-              whileHover={{ scale: 1.05, zIndex: 10 }}
-              className={`${
-                gridLayout[index % gridLayout.length]
-              } group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-primary-500/50 hover:shadow-2xl hover:shadow-primary-500/20`}
-              onClick={() => onFilterSelect && onFilterSelect(filter.id)}
+              to="/demo"
             >
+              <motion.div
+                variants={item}
+                whileHover={{ scale: 1.05, zIndex: 10 }}
+                className={`${
+                  gridLayout[index % gridLayout.length]
+                } group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-primary-500/50 hover:shadow-2xl hover:shadow-primary-500/20`}
+              >
               {/* Background Pattern */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-accent-500/20" />
@@ -136,7 +139,8 @@ const FilterGallery = ({ onFilterSelect }) => {
                   </svg>
                 </motion.div>
               </div>
-            </motion.div>
+              </motion.div>
+            </Link>
           ))}
         </motion.div>
 
@@ -148,8 +152,8 @@ const FilterGallery = ({ onFilterSelect }) => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-12 text-center"
         >
-          <button
-            onClick={() => onFilterSelect && onFilterSelect(null)}
+          <Link
+            to="/demo"
             className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-primary-600 to-accent-600 rounded-lg hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/50 transition-all duration-300"
           >
             <span>Try All Filters Now</span>
@@ -166,7 +170,7 @@ const FilterGallery = ({ onFilterSelect }) => {
                 d="M13 7l5 5m0 0l-5 5m5-5H6"
               />
             </svg>
-          </button>
+          </Link>
         </motion.div>
       </div>
     </section>

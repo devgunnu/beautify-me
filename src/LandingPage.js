@@ -1,16 +1,12 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Hero from './components/landing/Hero';
 import FilterGallery from './components/landing/FilterGallery';
 import Timeline from './components/landing/Timeline';
 import FAQ from './components/landing/FAQ';
 import CTASection from './components/landing/CTASection';
 
-const LandingPage = ({ onLaunchApp }) => {
-  const handleFilterSelect = (filterId) => {
-    // Scroll to app and optionally select the filter
-    onLaunchApp(filterId);
-  };
-
+const LandingPage = () => {
   const handleLearnMore = () => {
     // Scroll to timeline section
     document.querySelector('#timeline-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -19,13 +15,13 @@ const LandingPage = ({ onLaunchApp }) => {
   return (
     <div className="landing-page bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 min-h-screen">
       {/* Hero Section */}
-      <Hero onLaunchApp={onLaunchApp} onLearnMore={handleLearnMore} />
+      <Hero onLearnMore={handleLearnMore} />
 
       {/* Filter Gallery */}
-      <FilterGallery onFilterSelect={handleFilterSelect} />
+      <FilterGallery />
 
       {/* CTA Section */}
-      <CTASection onLaunchApp={onLaunchApp} />
+      <CTASection />
 
       {/* Learning Timeline */}
       <div id="timeline-section">
@@ -81,12 +77,12 @@ const LandingPage = ({ onLaunchApp }) => {
               <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button
-                    onClick={onLaunchApp}
+                  <Link
+                    to="/demo"
                     className="text-gray-400 hover:text-white transition-colors"
                   >
                     Launch App
-                  </button>
+                  </Link>
                 </li>
                 <li>
                   <a
